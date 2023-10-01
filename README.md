@@ -4,3 +4,5 @@ Installation:
 2. Add the ```Game csgo/addons/metamod``` line after the ```Game_LowViolence csgo_lv``` line to the csgo/gameinfo.gi file
 3. Drop the release files into the csgo folder
 4. Command ```mm_ban <userid> <time_second>```
+
+gameinfo.gi IS RESET AFTER EVERY UPDATE
