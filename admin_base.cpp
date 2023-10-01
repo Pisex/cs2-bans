@@ -37,7 +37,7 @@ void BanCommand(const CCommandContext& context, const CCommand& args)
 				auto steamid_target = engine->GetPlayerNetworkIDString(slotid);
 				auto name = engine->GetClientConVarValue(slotid, "name");
 				g_SMAPI->ClientConPrintf(slot, "[Admin] Player %s(%s) success Banned!\n", name, steamid_target);
-				engine->KickClient(slotid, "Ban", 41);
+				engine->DisconnectClient(CEntityIndex(slot.Get()), 41);
 				KeyValues* kv = new KeyValues("Config");
 				kv->LoadFromFile(filesystem, "addons/configs/bans.ini");
 				kv->SetInt(steamid_target, std::time(0) + std::stoi(args[2]));
@@ -80,7 +80,7 @@ void AdminBase::Hook_OnClientConnected(CPlayerSlot slot, const char* pszName, ui
 		auto steamid = engine->GetPlayerNetworkIDString(slot);
 		KeyValues* kv = new KeyValues("Config");
 		kv->LoadFromFile(filesystem, "addons/configs/bans.ini");
-		if (kv->GetInt(steamid) > std::time(0)) engine->KickClient(slot, "Ban", 41);
+		if (kv->GetInt(steamid) > std::time(0)) engine->DisconnectClient(CEntityIndex(slot.Get()), 41);
 		delete kv;
 	}
 }
