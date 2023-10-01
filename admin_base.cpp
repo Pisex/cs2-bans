@@ -41,7 +41,7 @@ void BanCommand(const CCommandContext& context, const CCommand& args)
 				KeyValues* kv = new KeyValues("Config");
 				kv->LoadFromFile(filesystem, "addons/configs/bans.ini");
 				kv->SetInt(steamid_target, std::time(0) + std::stoi(args[2]));
-				kv->SaveToFile(filesystem, "bans.ini");
+				kv->SaveToFile(filesystem, "addons/configs/bans.ini");
 				delete kv;
 			}
 		}
