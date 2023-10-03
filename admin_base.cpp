@@ -8,7 +8,7 @@ SH_DECL_HOOK6_void(IServerGameClients, OnClientConnected, SH_NOATTRIB, 0, CPlaye
 
 AdminBase g_AdminBase;
 IServerGameClients *gameclients = NULL;
-IVEngineServer *engine = NULL;
+IVEngineServer2 *engine = NULL;
 IFileSystem* filesystem = NULL;
 ICvar* icvar = NULL;
 
@@ -51,12 +51,45 @@ void BanCommand(const CCommandContext& context, const CCommand& args)
 	delete kv;
 }
 
+CON_COMMAND_EXTERN(mm_kick, KickCommand, "Kick Clients");
+void KickCommand(const CCommandContext& context, const CCommand& args)
+{
+	auto cmd = args.GetCommandString();
+	auto first = args[0];
+	auto slot = context.GetPlayerSlot();
+	const char * steamid = engine->GetPlayerNetworkIDString(slot);
+	KeyValues* kv = new KeyValues("Config");
+	kv->LoadFromFile(filesystem, "addons/configs/admins.ini");
+	if(kv->GetBool(steamid))
+	{
+		if (args.ArgC() > 1)
+		{
+			int slotid = std::stoi(args[1]);
+			if (engine->GetPlayerUserId(slotid).Get() == -1)
+			{
+				g_SMAPI->ClientConPrintf(slot, "[Admin] No valid player at UserID (%d) \n", slotid);
+			}
+			else
+			{
+				const char *steamid_target = engine->GetPlayerNetworkIDString(slotid);
+				const char *name = engine->GetClientConVarValue(slotid, "name");
+				g_SMAPI->ClientConPrintf(slot, "[Admin] Player %s(%s) success Kicked!\n", name, steamid_target, slot);
+				engine->DisconnectClient(CEntityIndex(slotid), 41);
+				//engine->KickClient(CPlayerSlot(slotid), "", 41);
+			}
+		}
+		else g_SMAPI->ClientConPrintf(slot, "[Admin] Usage: %s <userid> \n", first);
+	}
+	else g_SMAPI->ClientConPrintf(slot, "[Admin] You are denied access\n");
+	delete kv;
+}
+
 PLUGIN_EXPOSE(AdminBase, g_AdminBase);
 bool AdminBase::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
 {
 	PLUGIN_SAVEVARS();
 	GET_V_IFACE_CURRENT(GetEngineFactory, icvar, ICvar, CVAR_INTERFACE_VERSION);
-	GET_V_IFACE_CURRENT(GetEngineFactory, engine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
+	GET_V_IFACE_CURRENT(GetEngineFactory, engine, IVEngineServer2, INTERFACEVERSION_VENGINESERVER);
 	GET_V_IFACE_CURRENT(GetFileSystemFactory, filesystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 
