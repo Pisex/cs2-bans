@@ -12,7 +12,6 @@ public:
 	bool Unpause(char *error, size_t maxlen);
 public:
 	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
-	void Hook_ClientDisconnect(CPlayerSlot slot, int reason, const char* pszName, uint64 xuid, const char* pszNetworkID);
 	void Hook_OnClientConnected(CPlayerSlot slot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer);
 public:
 	const char *GetAuthor();

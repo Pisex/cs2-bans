@@ -2,11 +2,11 @@
 #include "admin_base.h"
 #include <string>
 #include <ctime>
+#include <algorithm>
 #include "KeyValues.h"
 #include <vector>
 
 SH_DECL_HOOK3_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
-SH_DECL_HOOK5_void(IServerGameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, int, const char*, uint64, const char*);
 SH_DECL_HOOK6_void(IServerGameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, const char*, uint64, const char*, const char*, bool);
 
 AdminBase g_AdminBase;
@@ -326,7 +326,6 @@ bool AdminBase::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 
 	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, server, this, &AdminBase::Hook_GameFrame, false);
-	SH_ADD_HOOK_MEMFUNC(IServerGameClients, ClientDisconnect, gameclients, this, &AdminBase::Hook_ClientDisconnect, true);
 	SH_ADD_HOOK_MEMFUNC(IServerGameClients, OnClientConnected, gameclients, this, &AdminBase::Hook_OnClientConnected, false);
 
 	g_pCVar = icvar;
@@ -388,7 +387,6 @@ void AdminBase::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 bool AdminBase::Unload(char* error, size_t maxlen)
 {
 	SH_REMOVE_HOOK_MEMFUNC(IServerGameDLL, GameFrame, server, this, &AdminBase::Hook_GameFrame, false);
-	SH_REMOVE_HOOK_MEMFUNC(IServerGameClients, ClientDisconnect, gameclients, this, &AdminBase::Hook_ClientDisconnect, true);
 	SH_REMOVE_HOOK_MEMFUNC(IServerGameClients, OnClientConnected, gameclients, this, &AdminBase::Hook_OnClientConnected, false);
 
 	g_AdmList.clear();
@@ -401,12 +399,6 @@ bool AdminBase::Unload(char* error, size_t maxlen)
 void AdminBase::Hook_OnClientConnected(CPlayerSlot slot, const char* pszName, uint64 xuid, const char* pszNetworkID, const char* pszAddress, bool bFakePlayer)
 {
 	APlayerDate[slot.Get()].IsFakeClient = bFakePlayer;
-	APlayerDate[slot.Get()].IsAuthenticated = false;
-}
-
-void AdminBase::Hook_ClientDisconnect(CPlayerSlot slot, int reason, const char* pszName, uint64 xuid, const char* pszNetworkID)
-{
-	APlayerDate[slot.Get()].IsFakeClient = true;
 	APlayerDate[slot.Get()].IsAuthenticated = false;
 }
 
