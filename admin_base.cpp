@@ -28,16 +28,22 @@ APlayer APlayerDate[64];
 int g_iLastCheck = 0;
 std::vector<std::string> g_AdmList;
 
-void ProcessBan(int slot, int time, const char* name, bool isConsole)
+void ProcessBan(int slot, int time_minutes, const char* name, bool isConsole)
 {
-	char steamid_target[64];
-	g_SMAPI->Format(steamid_target, sizeof(steamid_target), "%d", engine->GetClientXUID(slot));
-	if (isConsole) META_CONPRINTF("[Admin] Player %s(%s) success Banned!\n", name, steamid_target);
-	else g_SMAPI->ClientConPrintf(slot, "[Admin] Player %s(%s) success Banned!\n", name, steamid_target);
-	engine->DisconnectClient(CEntityIndex(slot), 41);
-	g_hKV->SetInt(steamid_target, time == 0 ? 0 : (std::time(0) + time));
-	g_hKV->SaveToFile(filesystem, "addons/configs/admin_base/bans.ini");
+    char steamid_target[64];
+    g_SMAPI->Format(steamid_target, sizeof(steamid_target), "%d", engine->GetClientXUID(slot));
+    int time_seconds = (time_minutes > 0) ? (time_minutes * 60) : 0;
+
+    if (isConsole) {
+        META_CONPRINTF("[Admin] Player %s(%s) success Banned for %d minute(s)!\n", name, steamid_target, time_minutes);
+    } else {
+        g_SMAPI->ClientConPrintf(slot, "[Admin] Player %s(%s) success Banned for %d minute(s)!\n", name, steamid_target, time_minutes);
+    }
+    engine->DisconnectClient(CEntityIndex(slot), 41);
+    g_hKV->SetInt(steamid_target, time_seconds);
+    g_hKV->SaveToFile(filesystem, "addons/configs/admin_base/bans.ini");
 }
+
 bool containsOnlyDigits(const std::string& str) {
 	return str.find_first_not_of("0123456789") == std::string::npos;
 }
@@ -232,8 +238,8 @@ void BanCommand(const CCommandContext& context, const CCommand& args)
 			}
 			else
 			{
-				if (isConsole) META_CONPRINTF("[Admin] Usage: mm_ban <userid|nickname> <timeban_second> \n");
-				else g_SMAPI->ClientConPrintf(slot, "[Admin] Usage: mm_ban <userid|nickname> <timeban_second> \n");
+				if (isConsole) META_CONPRINTF("[Admin] Usage: mm_ban <userid|nickname> <timeban_minute> \n");
+				else g_SMAPI->ClientConPrintf(slot, "[Admin] Usage: mm_ban <userid|nickname> <timeban_minute> \n");
 			}
 		}
 		else g_SMAPI->ClientConPrintf(slot, "[Admin] You are denied access\n");
