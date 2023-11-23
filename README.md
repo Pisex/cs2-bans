@@ -3,7 +3,7 @@
 ## Require
 - CS2 Serveur (Linux or Window)
 - Remove server hibernation `sv_hibernate_when_empty 0`
-- mysql_mm plugins by Poggu : https://github.com/Poggicek/mysql_mm
+- mysql_mm plugins by Poggu : https://github.com/Poggicek/mysql_mm (In the release archive)
 - Specify database data in the config
 
 ## Commands
