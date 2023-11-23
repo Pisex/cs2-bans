@@ -15,14 +15,36 @@ for sdk_name in MMSPlugin.sdks:
 
     binary = MMSPlugin.HL2Library(builder, cxx, MMSPlugin.plugin_name, sdk)
 
+    binary.compiler.cxxincludes += [
+      os.path.join(builder.currentSourcePath, 'funchook', 'include'),
+      os.path.join(builder.sourcePath, 'include'),
+    ]
+
+    if binary.compiler.target.platform == 'linux':
+      binary.compiler.postlink += [
+        os.path.join(builder.sourcePath, 'funchook', 'lib', 'libfunchook.a'),
+        os.path.join(builder.sourcePath, 'funchook', 'lib', 'libdistorm.a'),
+      ]
+    elif binary.compiler.target.platform == 'windows':
+      binary.compiler.postlink += [
+        os.path.join('psapi.lib'),
+        os.path.join(builder.sourcePath, 'funchook', 'lib', 'funchook.lib'),
+        os.path.join(builder.sourcePath, 'funchook', 'lib', 'distorm.lib'),
+      ]
+
     binary.sources += [
-      'admin_base.cpp',
+      'admin_system.cpp',
+      os.path.join('sdk', 'schemasystem.cpp'),
+      os.path.join('sdk', 'module.cpp'),
+      os.path.join('sdk', 'memaddr.cpp')
     ]
 
     if sdk_name in ['dota', 'cs2']:
       binary.sources += [
       os.path.join(sdk.path, 'tier1', 'convar.cpp'),
-      os.path.join(sdk.path, 'public', 'tier0', 'memoverride.cpp'),
+      os.path.join(sdk.path, 'tier1', 'generichash.cpp'),
+      os.path.join(sdk.path, 'entity2', 'entitysystem.cpp'),
+      os.path.join(sdk.path, 'public', 'tier0', 'memoverride.cpp')
     ]
 
     if cxx.target.arch == 'x86':

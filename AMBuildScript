@@ -125,12 +125,12 @@ class MMSPluginConfig(object):
     if builder.options.plugin_name is not None:
       self.plugin_name = builder.options.plugin_name
     else:
-      self.plugin_name = 'admin_base'
+      self.plugin_name = 'admin_system'
 
     if builder.options.plugin_alias is not None:
       self.plugin_alias = builder.options.plugin_alias
     else:
-      self.plugin_alias = 'sample'
+      self.plugin_alias = 'admin_system'
 
     if builder.options.targets:
       target_archs = builder.options.targets.split(',')
@@ -230,6 +230,9 @@ class MMSPluginConfig(object):
         '-Wno-uninitialized',
         '-Wno-unused',
         '-Wno-switch',
+        '-Wno-register',
+        '-Wno-macro-redefined',
+        '-Wno-mismatched-tags',
         '-msse',
         '-fPIC',
       ]
@@ -237,13 +240,12 @@ class MMSPluginConfig(object):
       if cxx.version == 'apple-clang-6.0' or cxx.version == 'clang-3.4':
         cxx.cxxflags += ['-std=c++1y']
       else:
-        cxx.cxxflags += ['-std=c++14']
+        cxx.cxxflags += ['-std=c++17']
       if (cxx.version >= 'gcc-4.0') or cxx.family == 'clang':
         cxx.cflags += ['-fvisibility=hidden']
         cxx.cxxflags += ['-fvisibility-inlines-hidden']
       cxx.cxxflags += [
         '-fno-exceptions',
-        '-fno-rtti',
         '-fno-threadsafe-statics',
         '-Wno-non-virtual-dtor',
         '-Wno-overloaded-virtual',
@@ -285,7 +287,10 @@ class MMSPluginConfig(object):
         '/W3',
         '/Zi',
       ]
-      cxx.cxxflags += ['/TP']
+      cxx.cxxflags += [
+        '/TP',
+        '/std:c++17',
+      ]
       
       cxx.linkflags += [
         '/SUBSYSTEM:WINDOWS',
@@ -383,6 +388,8 @@ class MMSPluginConfig(object):
       paths.append(['public', 'game', 'server'])
       paths.append(['game', 'shared'])
       paths.append(['common'])
+      paths.append(['public', 'entity2'])
+      paths.append(['game', 'server'])
     compiler.defines += ['SOURCE_ENGINE=' + sdk.code]
 
     if sdk.name in ['sdk2013', 'bms', 'pvkii'] and compiler.like('gcc'):
