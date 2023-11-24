@@ -1,5 +1,10 @@
 # Admin system
 
+# TODO List
+- [ ]  Launch workshop map
+- [ ]  Adding/Removing admin(https://github.com/Pisex/cs2-bans/issues/19)
+- [ ]  Server-side localization file
+
 ## Require
 - CS2 Serveur (Linux or Window)
 - Remove server hibernation `sv_hibernate_when_empty 0`
