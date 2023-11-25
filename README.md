@@ -1,5 +1,5 @@
 # Admin system
-
+My Discord server - https://discord.com/invite/g798xERK5Y
 # TODO List
 - [ ]  Launch workshop map
 - [ ]  Adding/Removing admin(https://github.com/Pisex/cs2-bans/issues/19)
