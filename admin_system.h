@@ -113,15 +113,21 @@ private:
 class CAdmin
 {
 public:
-	CAdmin(uint64 iSteamID, uint64 iFlags) : 
-		m_iSteamID(iSteamID), m_iFlags(iFlags)
+	CAdmin(uint64 iSteamID, uint64 iFlags, int iImmunity, const char* sName, uint64_t iEnd) : 
+		m_iSteamID(iSteamID), m_iFlags(iFlags), m_iImmunity(iImmunity), m_sName(sName), m_iEnd(iEnd)
 	{}
 
+	int GetImmunity() { return m_iImmunity; };
+	uint64_t GetEnd() { return m_iEnd; };
 	uint64 GetSteamID() { return m_iSteamID; };
 	uint64 GetFlags() { return m_iFlags; };
+	const char* GetName() { return m_sName; };
 private:
 	uint64 m_iSteamID;
 	uint64 m_iFlags;
+	int m_iImmunity;
+	const char* m_sName;
+	uint64_t m_iEnd;
 };
 
 class AdminSystem final : public ISmmPlugin, public IMetamodListener
@@ -136,6 +142,8 @@ public:
 	int TargetPlayerString(const char* target);
 	CPlayer* GetPlayer(int slot);
 	void CreateTimer(std::function<void()> fn, uint64_t time);
+	const char* Translate(const char* phrase);
+	bool CheckImmunity(int iTarget, int iAdmin, CCSPlayerController *player);
 private:
 	const char* GetAuthor();
 	const char* GetName();
@@ -152,6 +160,7 @@ private: // Hooks
 	void Hook_OnClientDisconnect(CPlayerSlot slot, int reason, const char *pszName, uint64 xuid, const char *pszNetworkID);
 	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
 	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
+	void Hook_GameServerSteamAPIActivated();
 
 	void ParseChatCommand(int iSlot, const char *pMessage, CCSPlayerController *pController);
 	void CheckInfractions(int slot);

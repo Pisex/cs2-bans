@@ -63,7 +63,6 @@ char g_FlagNames[FLAG_STRINGS][20] =
 #define MAXPLAYERS 64
 
 #define COMMAND_PREFIX "mm_"
-#define CHAT_PREFIX "[ADMIN]"
 
 constexpr uint32_t val_32_const = 0x811c9dc5;
 constexpr uint32_t prime_32_const = 0x1000193;
