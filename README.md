@@ -1,4 +1,7 @@
 # Admin system
+My Discord server - https://discord.com/invite/g798xERK5Y
+# TODO List
+- [ ]  ...
 
 ## Require
 - CS2 Serveur (Linux or Window)
