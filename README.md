@@ -39,6 +39,5 @@ The plugin includes the following commands:
 - `!remove_admin <steamid64>` - Allows you to remove an administrator (ADMFLAG_ROOT)
 
 ## Configuration
-- Admins file: `addons/configs/admins.cfg`
 - Databases file: `addons/configs/databases.cfg`
 - Translation file: `addons/translations/admin_system.phrases.txt`
