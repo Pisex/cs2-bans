@@ -495,7 +495,7 @@ void AdminSystem::Hook_GameServerSteamAPIActivated()
 	funchook_prepare(m_IsHearingClient, (void**)&UTIL_IsHearingClient, (void*)IsHearingClient);
 	funchook_install(m_IsHearingClient, 0);
 
-	UTIL_SayTeam = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 2C 7A AA 00").RCast< decltype(UTIL_SayTeam) >();
+	UTIL_SayTeam = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 1C 79 AA 00").RCast< decltype(UTIL_SayTeam) >();
 	if (!UTIL_SayTeam)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_SayTeam", sizeof(error));
@@ -508,7 +508,7 @@ void AdminSystem::Hook_GameServerSteamAPIActivated()
 	funchook_prepare(m_SayTeamHook, (void**)&UTIL_SayTeam, (void*)SayTeamHook);
 	funchook_install(m_SayTeamHook, 0);
 
-	UTIL_Say = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 1C 79 AA 00").RCast< decltype(UTIL_Say) >();
+	UTIL_Say = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 0C 78 AA 00").RCast< decltype(UTIL_Say) >();
 	if (!UTIL_Say)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_Say", sizeof(error));
