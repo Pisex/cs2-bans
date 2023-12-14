@@ -12,6 +12,7 @@ My Discord server - https://discord.com/invite/g798xERK5Y
 ## Commands
 Admin functions can be used both in the console(mm_*) and in chat(!*)
 The plugin includes the following commands:
+- `!status` - Shows player userid.
 - `!admin` - Display available commands.
 - `!ban <#userid|name> <duration(minutes)/0 (permanent)> <reason>` - Allows you to block a player(ADMFLAG_BAN)
 - `!unban <steamid> - unban` - Allows you to unblock a player(ADMFLAG_UNBAN)
