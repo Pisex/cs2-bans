@@ -41,6 +41,10 @@ funchook_t* m_IsHearingClient;
 funchook_t* m_SayHook;
 funchook_t* m_SayTeamHook;
 
+bool containsOnlyDigits(const std::string& str) {
+	return str.find_first_not_of("0123456789") == std::string::npos;
+}
+
 void SayTeamHook(const CCommandContext& ctx, CCommand& args)
 {
 	auto iCommandPlayerSlot = ctx.GetPlayerSlot();
@@ -163,7 +167,7 @@ int AdminSystem::TargetPlayerString(const char* target)
 			if (!player)
 				continue;
 
-			if (V_stristr(player->m_iszPlayerName(), target))
+			if (strstr(player->m_iszPlayerName(), target))
 			{
 				return i;
 			}
@@ -495,7 +499,7 @@ void AdminSystem::Hook_GameServerSteamAPIActivated()
 	funchook_prepare(m_IsHearingClient, (void**)&UTIL_IsHearingClient, (void*)IsHearingClient);
 	funchook_install(m_IsHearingClient, 0);
 
-	UTIL_SayTeam = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 1C 79 AA 00").RCast< decltype(UTIL_SayTeam) >();
+	UTIL_SayTeam = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 0C 85 AA 00").RCast< decltype(UTIL_SayTeam) >();
 	if (!UTIL_SayTeam)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_SayTeam", sizeof(error));
@@ -508,7 +512,7 @@ void AdminSystem::Hook_GameServerSteamAPIActivated()
 	funchook_prepare(m_SayTeamHook, (void**)&UTIL_SayTeam, (void*)SayTeamHook);
 	funchook_install(m_SayTeamHook, 0);
 
-	UTIL_Say = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 0C 78 AA 00").RCast< decltype(UTIL_Say) >();
+	UTIL_Say = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 FC 83 AA 00").RCast< decltype(UTIL_Say) >();
 	if (!UTIL_Say)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_Say", sizeof(error));
@@ -953,6 +957,27 @@ CON_COMMAND_CHAT_FLAGS(silence, "silence a player", ADMFLAG_CHAT)
 CON_COMMAND_CHAT_FLAGS(unsilence, "unsilence a player", ADMFLAG_CHAT)
 {
 	UnPunishmentPlayer(iSlot, args, player, 3);
+}
+
+CON_COMMAND_CHAT(status, "status")
+{
+	bool bFound = false;
+	char szBuffer[256];
+	for (int i = 0; i < gpGlobals->maxClients; i++)
+	{
+		if(engine->GetPlayerUserId(i).Get() == -1) continue;
+		CCSPlayerController *pTarget = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(i + 1));
+
+		CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(i);
+
+		if (!pTargetPlayer || pTargetPlayer->IsFakeClient() || !pTarget)
+			continue;
+
+		g_SMAPI->Format(szBuffer, sizeof(szBuffer), "%i.%s", i, pTarget->m_iszPlayerName());
+		ClientPrint(player, HUD_PRINTTALK, "%s", szBuffer);
+		bFound = true;
+	}
+	if(!bFound) ClientPrint(player, HUD_PRINTTALK, "%s", g_AdminSystem.Translate("AccessNoPlayers"));
 }
 
 CON_COMMAND_CHAT_FLAGS(kick, "kick a player", ADMFLAG_KICK)
