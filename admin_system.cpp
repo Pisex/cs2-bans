@@ -27,8 +27,8 @@ SH_DECL_HOOK0_void(IServerGameDLL, GameServerSteamAPIActivated, SH_NOATTRIB, 0);
 SH_DECL_HOOK3_void(INetworkServerService, StartupServer, SH_NOATTRIB, 0, const GameSessionConfiguration_t&, ISource2WorldSession*, const char*);
 SH_DECL_HOOK5_void(IServerGameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, int, const char *, uint64, const char *);
 SH_DECL_HOOK3_void(ICvar, DispatchConCommand, SH_NOATTRIB, 0, ConCommandHandle, const CCommandContext&, const CCommand&);
-SH_DECL_HOOK4_void(IServerGameClients, ClientPutInServer, SH_NOATTRIB, 0, CPlayerSlot, char const *, int, uint64);
 SH_DECL_HOOK3_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
+SH_DECL_HOOK6(IServerGameClients, ClientConnect, SH_NOATTRIB, 0, bool, CPlayerSlot, const char*, uint64, const char *, bool, CBufferString *);
 
 void (*UTIL_ClientPrint)(CBasePlayerController *player, int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4) = nullptr;
 void (*UTIL_ClientPrintAll)(int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4) = nullptr;
@@ -48,20 +48,28 @@ bool containsOnlyDigits(const std::string& str) {
 void SayTeamHook(const CCommandContext& ctx, CCommand& args)
 {
 	auto iCommandPlayerSlot = ctx.GetPlayerSlot();
-	bool bGagged = g_AdminSystem.GetPlayer(iCommandPlayerSlot.Get())->IsGagged();
-	if(!bGagged) UTIL_SayTeam(ctx, args);
+	if(iCommandPlayerSlot.Get() > 0)
+	{
+		CPlayer* player = g_AdminSystem.GetPlayer(iCommandPlayerSlot.Get());
+		if(player != nullptr && player->IsGagged()) UTIL_SayTeam(ctx, args);
+	}
+	else UTIL_SayTeam(ctx, args);
 }
 void SayHook(const CCommandContext& ctx, CCommand& args)
 {
 	auto iCommandPlayerSlot = ctx.GetPlayerSlot();
-	bool bGagged = g_AdminSystem.GetPlayer(iCommandPlayerSlot.Get())->IsGagged();
-	if(!bGagged) UTIL_Say(ctx, args);
+	if(iCommandPlayerSlot.Get() > 0)
+	{
+		CPlayer* player = g_AdminSystem.GetPlayer(iCommandPlayerSlot.Get());
+		if(player != nullptr && player->IsGagged()) UTIL_SayTeam(ctx, args);
+	}
+	else UTIL_SayTeam(ctx, args);
 }
 
 bool FASTCALL IsHearingClient(void* serverClient, int index)
 {
 	CPlayer* player = g_AdminSystem.GetPlayer(index);
-	if (player && player->IsMuted())
+	if (player != nullptr && player->IsMuted())
 		return false;
 
 	return UTIL_IsHearingClient(serverClient, index);
@@ -444,10 +452,10 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, g_pSource2Server, this, &AdminSystem::Hook_GameFrame, false);
 	SH_ADD_HOOK(INetworkServerService, StartupServer, g_pNetworkServerService, SH_MEMBER(this, &AdminSystem::StartupServer), true);
 	SH_ADD_HOOK_MEMFUNC(IServerGameClients, ClientDisconnect, g_pSource2GameClients, this, &AdminSystem::Hook_OnClientDisconnect, true);
-	SH_ADD_HOOK_MEMFUNC(IServerGameClients, ClientPutInServer, g_pSource2GameClients, this, &AdminSystem::Hook_ClientPutInServer, true);
 	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameServerSteamAPIActivated, g_pSource2Server, this, &AdminSystem::Hook_GameServerSteamAPIActivated, false);
 	SH_ADD_HOOK_MEMFUNC(ICvar, DispatchConCommand, g_pCVar, this, &AdminSystem::Hook_DispatchConCommand, false);
-
+	SH_ADD_HOOK_MEMFUNC(IServerGameClients, ClientConnect, g_pSource2GameClients, this, &AdminSystem::Hook_ClientConnect, false );
+	
 	gameeventmanager = static_cast<IGameEventManager2*>(CallVFunc<IToolGameEventAPI*, 91>(g_pSource2Server));
 	ConVar_Register(FCVAR_GAMEDLL);
 
@@ -499,7 +507,7 @@ void AdminSystem::Hook_GameServerSteamAPIActivated()
 	funchook_prepare(m_IsHearingClient, (void**)&UTIL_IsHearingClient, (void*)IsHearingClient);
 	funchook_install(m_IsHearingClient, 0);
 
-	UTIL_SayTeam = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 0C 85 AA 00").RCast< decltype(UTIL_SayTeam) >();
+	UTIL_SayTeam = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 7C 8E AA 00").RCast< decltype(UTIL_SayTeam) >();
 	if (!UTIL_SayTeam)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_SayTeam", sizeof(error));
@@ -512,7 +520,7 @@ void AdminSystem::Hook_GameServerSteamAPIActivated()
 	funchook_prepare(m_SayTeamHook, (void**)&UTIL_SayTeam, (void*)SayTeamHook);
 	funchook_install(m_SayTeamHook, 0);
 
-	UTIL_Say = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 FC 83 AA 00").RCast< decltype(UTIL_Say) >();
+	UTIL_Say = libserver.FindPatternSIMD("55 48 89 E5 41 56 41 55 49 89 F5 41 54 49 89 FC 53 48 83 EC 10 48 8D 05 6C 8D AA 00").RCast< decltype(UTIL_Say) >();
 	if (!UTIL_Say)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_Say", sizeof(error));
@@ -532,8 +540,11 @@ bool AdminSystem::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK_MEMFUNC(IServerGameDLL, GameFrame, g_pSource2Server, this, &AdminSystem::Hook_GameFrame, false);
 	SH_REMOVE_HOOK_MEMFUNC(IServerGameClients, ClientDisconnect, g_pSource2GameClients, this, &AdminSystem::Hook_OnClientDisconnect, true);
 	SH_REMOVE_HOOK_MEMFUNC(ICvar, DispatchConCommand, g_pCVar, this, &AdminSystem::Hook_DispatchConCommand, false);
-	SH_REMOVE_HOOK_MEMFUNC(IServerGameClients, ClientPutInServer, g_pSource2GameClients, this, &AdminSystem::Hook_ClientPutInServer, true);
 	SH_REMOVE_HOOK_MEMFUNC(IServerGameDLL, GameServerSteamAPIActivated, g_pSource2Server, this, &AdminSystem::Hook_GameServerSteamAPIActivated, false);
+	SH_REMOVE_HOOK_MEMFUNC(IServerGameClients, ClientConnect, g_pSource2GameClients, this, &AdminSystem::Hook_ClientConnect, false);
+	
+	funchook_destroy(m_SayHook);
+	funchook_destroy(m_SayTeamHook);
 
 	ConVar_Unregister();
 
@@ -575,20 +586,21 @@ void AdminSystem::StartupServer(const GameSessionConfiguration_t& config, ISourc
 	}
 }
 
-void AdminSystem::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
+bool AdminSystem::Hook_ClientConnect( CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, bool unk1, CBufferString *pRejectReason )
 {
-	if(m_vecPlayers[slot.Get()] == nullptr)
+	if(m_vecPlayers[slot.Get()] != nullptr)
 	{
-		CCSPlayerController* pPlayer = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(slot.Get() + 1));
-		if(!pPlayer || pPlayer->m_steamID() == 0) m_vecPlayers[slot.Get()] = new CPlayer(slot, true);
-		else m_vecPlayers[slot.Get()] = new CPlayer(slot);
+		delete m_vecPlayers[slot.Get()];
+		m_vecPlayers[slot.Get()] = nullptr;
 	}
+	if(xuid <= 0) m_vecPlayers[slot.Get()] = new CPlayer(slot, true);
+	else m_vecPlayers[slot.Get()] = new CPlayer(slot, false);
+
+	RETURN_META_VALUE(MRES_IGNORED, true);
 }
 
 void AdminSystem::Hook_OnClientDisconnect(CPlayerSlot slot, int reason, const char *pszName, uint64 xuid, const char *pszNetworkID)
 {
-	delete m_vecPlayers[slot.Get()];
-	m_vecPlayers[slot.Get()] = nullptr;
 }
 
 void AdminSystem::CreateTimer(std::function<void()> fn, uint64_t time)
@@ -621,6 +633,12 @@ void AdminSystem::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTic
 		{
 			CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(i + 1));
 			if(!pPlayerController)
+				continue;
+			if(pPlayerController->m_steamID() == 0)
+				continue;
+			if(!pPlayerController->m_hPlayerPawn())
+				continue;
+			if(!pPlayerController->m_hPawn())
 				continue;
 			CPlayerSlot pSlot = CPlayerSlot(i);
 			CPlayer* pPlayer = g_AdminSystem.GetPlayer(i);
@@ -715,11 +733,14 @@ void PunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *play
 
 	CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(iTarget);
 
-	if (pTargetPlayer->IsFakeClient())
+	if (pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
 		return;
 
 	CPlayer* pPlayer = g_AdminSystem.GetPlayer(iSlot);
 	
+	if (pPlayer == nullptr || pPlayer->IsFakeClient())
+		return;
+
 	std::string sReason = std::string(args.ArgS());
 	int val = sReason.find(args[1]);
     if(val != -1) sReason.replace(val, strlen(args[1]), "");
@@ -822,9 +843,12 @@ void UnPunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *pl
 		if (!pTarget)
 			return;
 		CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(iTarget);
-		if (pTargetPlayer->IsFakeClient())
+		if (pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
 			return;
 		CPlayer* pPlayer = g_AdminSystem.GetPlayer(iSlot);
+		if(pPlayer == nullptr || pPlayer->IsFakeClient())
+			return;
+
 		switch (iType)
 		{
 			case 1:
@@ -965,12 +989,13 @@ CON_COMMAND_CHAT(status, "status")
 	char szBuffer[256];
 	for (int i = 0; i < gpGlobals->maxClients; i++)
 	{
-		if(engine->GetPlayerUserId(i).Get() == -1) continue;
+		if(engine->GetPlayerUserId(i).Get() == -1)
+			continue;
 		CCSPlayerController *pTarget = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(i + 1));
 
 		CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(i);
 
-		if (!pTargetPlayer || pTargetPlayer->IsFakeClient() || !pTarget)
+		if (!pTarget || pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
 			continue;
 
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), "%i.%s", i, pTarget->m_iszPlayerName());
@@ -1021,7 +1046,7 @@ CON_COMMAND_CHAT_FLAGS(who, "recognize a player", ADMFLAG_GENERIC)
 
 			CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(i);
 
-			if (!pTargetPlayer || pTargetPlayer->IsFakeClient() || !pTarget)
+			if(!pTarget || pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
 				continue;
 
 			CAdmin* foundAdminPtr = g_AdminSystem.FindAdmin(i);
@@ -1058,7 +1083,7 @@ CON_COMMAND_CHAT_FLAGS(who, "recognize a player", ADMFLAG_GENERIC)
 
 		CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(iTarget);
 
-		if (!pTargetPlayer || pTargetPlayer->IsFakeClient() || !pTarget)
+		if (!pTarget || pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
 			return;
 
 		CAdmin* foundAdminPtr = g_AdminSystem.FindAdmin(iTarget);

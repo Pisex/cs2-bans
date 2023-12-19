@@ -84,6 +84,7 @@ public:
 		m_bAuthenticated = false;
 		m_iGagged = -1;
 		m_iMuted = -1;
+		m_SteamID = 0;
 	}
 
 	bool IsFakeClient() { return m_bFakeClient; }
@@ -158,7 +159,7 @@ private: // Hooks
 	void StartupServer(const GameSessionConfiguration_t& config, ISource2WorldSession*, const char*);
 	void Hook_DispatchConCommand(ConCommandHandle cmd, const CCommandContext& ctx, const CCommand& args);
 	void Hook_OnClientDisconnect(CPlayerSlot slot, int reason, const char *pszName, uint64 xuid, const char *pszNetworkID);
-	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
+	bool Hook_ClientConnect( CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, bool unk1, CBufferString *pRejectReason );
 	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
 	void Hook_GameServerSteamAPIActivated();
 
