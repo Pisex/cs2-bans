@@ -1,245 +1,245 @@
 "Phrases"
 {
-    "language"  "ua"
+    "language"  "en"
     
 	"Prefix"
 	{
-		"en"	"[ADMIN]"
-		"ru"	"[ADMIN]"
-		"ua"    "[ADMIN]"
+		"tr"    "[ADMIN] "
+		"en"	"[ADMIN] "
+		"ru"	"[ADMIN] "
 	}
-	"Usage"
-	{
-		"en"	"Usage: "
-		"ru"    "Используйте: "
-		"ua"    "Використання: "
-	}
+    "Usage"
+    {
+		"tr"    "Kullanım: "
+        "en"	"Usage: "
+        "ru"    "Используйте: "
+    }
 	"Changing map"
 	{
+		"tr"	"Harita %s olarak değiştiriliyor.."
 		"en"	"Changing map to %s..."
 		"ru"	"Смена карты на %s..."
-		"ua"	"Зміна карти на %s..."
 	}
 	"Changing map workshop"
 	{
+		"tr"	"Atölye koleksiyonundan %s haritasına geçiş deneniyor..."
 		"en"	"Attempting a map change to %s from the workshop collection..."
 		"ru"	"Попытка изменения карты на %s из коллекции мастерских..."
-		"ua"	"Спроба зміни карти на %s з колекції майстерень..."
 	}
 	"Admins reloaded"
 	{
+		"tr"	"Yetkili listesi başarıyla yeniden yüklendi."
 		"en"	"The admin list has been successfully reloaded."
 		"ru"	"Список админов успешно перезагружен."
-		"ua"	"Список адміністраторів успішно перезавантажено."
 	}
 	"Target not found"
 	{
+		"tr"	"Hedef bulunamadı."
 		"en"	"Target not found."
 		"ru"	"Цель не найдена."
-		"ua"	"Ціль не знайдена."
 	}
 	"Slayed"
 	{
+		"tr"	"Admin %s, %s'yi öldürdü."
 		"en"	"Admin %s has slayed %s"
 		"ru"	"Администратор %s убил %s"
-		"ua"	"Адміністратор %s вбив %s"
 	}
 	"Slapped"
 	{
+		"tr"	"Admin %s, %s'e tokat attı."
 		"en"	"Admin %s has slapped %s"
 		"ru"	"Администратор %s шлёпнул %s"
-		"ua"	"Адміністратор %s вдарив %s"
 	}
 	"Moved"
 	{
+		"tr"	"Admin %s, %s'i %s'e taşıdı."
 		"en"	"Admin %s moved %s to %s"
 		"ru"	"Администратор %s переместил %s за %s"
-		"ua"	"Адміністратор %s перемістив %s до %s"
 	}
 	"Invalid Team"
 	{
+		"tr"	"Geçersiz takım belirtildi, aralık 0-3'tür."
 		"en"	"Invalid team specified, range is 0-3."
 		"ru"	"Указана недопустимая команда, диапазон 0-3."
-		"ua"	"Вказана недопустима команда, діапазон 0-3."
 	}
 	"ANoclipDisable"
 	{
+		"tr"	"Admin %s, noclip modundan çıktı."
 		"en"	"Admin %s exited noclip."
 		"ru"	"Администратор %s вышел из noclip."
-		"ua"	"Адміністратор %s вийшов з noclip."
 	}
 	"ANoclipEnable"
 	{
+		"tr"	"Admin %s, noclip moduna girdi."
 		"en"	"Admin %s entered noclip."
 		"ru"	"Администратор %s вошел в noclip."
-		"ua"	"Адміністратор %s увійшов у noclip."
 	}
 	"NoclipDead"
 	{
+		"tr"	"Ölüyken noclip kullanamazsınız!"
 		"en"	"You cannot using noclip while dead!"
 		"ru"	"Вы не можете использовать noclip, будучи мертвым!"
-		"ua"	"Ви не можете використовувати noclip, будучи мертвим!"
 	}
 	"NoclipDisable"
 	{
+		"tr"	"Admin %s, %s'nin noclip özelliğini devre dışı bıraktı."
 		"en"	"Admin %s deactivated noclip %s"
 		"ru"	"Администратор %s деактивировал noclip %s"
-		"ua"	"Адміністратор %s деактивував noclip %s"
 	}
 	"NoclipEnable"
 	{
+		"tr"	"Admin %s, %s'nin noclip özelliğini etkinleştirdi."
 		"en"	"Admin %s activated noclip %s"
 		"ru"	"Администратор %s активировал noclip %s"
-		"ua"	"Адміністратор %s активував noclip %s"
 	}
 	"Freeze"
 	{
+		"tr"	"Admin %s, %s'i dondurdu."
 		"en"	"Admin %s has freezing %s"
 		"ru"	"Администратор %s заморозил %s"
-		"ua"	"Адміністратор %s заморозив %s"
 	}
 	"Unfreeze"
 	{
+		"tr"	"Admin %s, %s'in dondurulmasını kaldırdı."
 		"en"	"Admin %s has unfreezing %s"
 		"ru"	"Администратор %s разморозил %s"
-		"ua"	"Адміністратор %s розморозив %s"
 	}
 	"Invalid duration"
 	{
+		"tr"	"Geçersiz süre."
 		"en"	"Invalid duration."
 		"ru"	"Неверная длительность."
-		"ua"	"Невірна тривалість."
 	}
 	"Invalid immunity"
 	{
+		"tr"	"Geçersiz dokunmazlık."
 		"en"	"Invalid immunity."
 		"ru"	"Неверный иммунитет."
-		"ua"	"Невірний імунітет."
 	}
 	"You console"
 	{
+		"tr"	"Zaten sunucu konsolundaydınız."
 		"en"	"You are already on the server console."
 		"ru"	"Вы уже находитесь в консоли сервера"
-		"ua"	"Ви вже знаходитесь в консолі сервера"
 	}
 	"Access"
 	{
+		"tr"	"%s erişime sahip: %s"
 		"en"	"%s has access: %s"
 		"ru"	"%s имеет доступ: %s"
-		"ua"	"%s має доступ: %s"
 	}
 	"AccessAdmin"
 	{
+		"tr"	"%s, %s olarak giriş yaptı ve erişime sahip: %s"
 		"en"	"%s is logged in as %s with access: %s"
 		"ru"	"%s вошел как %s с доступом: %s"
-		"ua"	"%s увійшов як %s з доступом: %s"
 	}
 	"AccessNoPlayers"
 	{
+		"tr"	"Oyuncu bulunamadı"
 		"en"	"No players found"
 		"ru"	"Не найдено ни одного игрока"
-		"ua"	"Гравців не знайдено"
 	}
 	"Kick"
 	{
+		"tr"	"Admin %s, %s'yi attı."
 		"en"	"Admin %s has kicked %s"
 		"ru"	"Администратор %s выгнал %s"
-		"ua"	"Адміністратор %s вигнав %s"
 	}
 	"UnMuted"
 	{
+		"tr"	"Admin %s, %s'in susturulmasını kaldırdı."
 		"en"	"Admin %s has unmuted %s"
 		"ru"	"Администратор %s размутил войс %s"
-		"ua"	"Адміністратор %s розмутив войс %s"
 	}
 	"UnGagged"
 	{
+		"tr"	"Admin %s, %s'in sohbet yasağını kaldırdı."
 		"en"	"Admin %s has ungagged %s"
 		"ru"	"Администратор %s размутил чат %s"
-		"ua"	"Адміністратор %s розмутив чат %s"
 	}
 	"UnSilence"
 	{
+		"tr"	"Admin %s, %s'in 	 kaldırdı."
 		"en"	"Admin %s has unsilence %s"
 		"ru"	"Администратор %s снял все голосовые и текстовые муты %s"
-		"ua"	"Адміністратор %s зняв всі голосові і текстові мути %s"
 	}
 	"BanPermanent"
 	{
+		"tr"	"Admin %s, %s'i kalıcı olarak yasakladı."
 		"en"	"Admin %s has permanently banned %s"
 		"ru"	"Администратор %s навсегда заблокировал %s"
-		"ua"	"Адміністратор %s назавжди заблокував %s"
 	}
 	"Ban"
 	{
+		"tr"	"Admin %s, %s'i %i dakika boyunca yasakladı."
 		"en"	"Admin %s has banned %s for %i minutes"
 		"ru"	"Администратор %s забанил %s на %i минут"
-		"ua"	"Адміністратор %s забанив %s на %i хвилин"
 	}
 	"MutePermanent"
 	{
+		"tr"	"Admin %s, %s'in sesini kalıcı olarak kıstı."
 		"en"	"Admin %s has permanently muted %s"
 		"ru"	"Администратор %s навсегда отключил голос %s"
-		"ua"	"Адміністратор %s назавжди вимкнув голос %s"
 	}
 	"Mute"
 	{
+		"tr"	"Admin %s, %s'in sesini %i dakika boyunca kıstı."
 		"en"	"Admin %s has muted %s for %i minutes."
 		"ru"	"Администратор %s отключил голос %s на %i минут."
-		"ua"	"Адміністратор %s вимкнув голос %s на %i хвилин."
 	}
 	"GagPermanent"
 	{
+		"tr"	"Admin %s, %s'in sohbet yasağını kalıcı olarak uyguladı."
 		"en"	"Admin %s has permanently gagged %s"
 		"ru"	"Администратор %s навсегда отключил чат %s"
-		"ua"	"Адміністратор %s назавжди вимкнув чат %s"
 	}
 	"Gag"
 	{
+		"tr"	"Admin %s, %s'e %i dakika boyunca sohbet yasağı uyguladı."
 		"en"	"Admin %s has gagged %s for %i minutes."
 		"ru"	"Администратор %s отключил чат %s на %i минут."
-		"ua"	"Адміністратор %s вимкнув чат %s на %i хвилин."
 	}
 	"SilencePermanent"
 	{
+		"tr"	"Admin %s, %s'in sohbet ve mikrofon erişimini kalıcı olarak kapattı."
 		"en"	"Admin %s has permanently silence %s"
 		"ru"	"Администратор %s навсегда отключил голос и чат %s"
-		"ua"	"Адміністратор %s назавжди вимкнув голос і чат %s"
 	}
 	"Silence"
 	{
+		"tr"	"Admin %s, %s'in sohbetini ve mikrofonunu %i dakika boyunca kapattı."
 		"en"	"Admin %s has silence %s for %i minutes."
 		"ru"	"Администратор %s отключил голос и чат %s на %i минут."
-		"ua"	"Адміністратор %s вимкнув голос і чат %s на %i хвилин."
 	}
 	"AddAdmin"
 	{
+		"tr"	"Yetkili %s başarıyla eklendi."
 		"en"	"Admin %s successfully added"
 		"ru"	"Администратор %s успешно добавлен"
-		"ua"	"Адміністратор %s успішно доданий"
 	}
 	"RemoveAdmin"
 	{
+		"tr"	"Yetkili %s başarıyla silindi."
 		"en"	"Admin %s successfully deleted"
 		"ru"	"Администратор %s успешно удалён"
-		"ua"	"Адміністратор %s успішно видалений"
 	}
 	"UpdateAdmin"
 	{
+		"tr"	"Yetkili bilgileri başarıyla güncellendi."
 		"en"	"Admin information has been successfully updated"
 		"ru"	"Информация об администраторе успешно обновлена"
-		"ua"	"Інформація про адміністратора успішно оновлена"
 	}
 	"DenyAccess"
 	{
+		"tr"	"Bu komuta erişiminiz yok."
 		"en"	"You don't have access to this command."
 		"ru"	"У вас нет доступа к этой команде."
-		"ua"	"У вас немає доступу до цієї команди."
 	}
 	"Target immunity"
 	{
+		"tr"	"Bu komutu, sizden üstün olan bir yetkilinin üzerinde kullanamazsınız."
 		"en"	"You can't use this on an administrator above you in rank"
 		"ru"	"Вы не можете использовать это на администраторе выше вас рангом"
-		"ua"	"Ви не можете використовувати це на адміністраторі вищого рангу за вас"
 	}
 }
