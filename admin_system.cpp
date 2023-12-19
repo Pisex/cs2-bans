@@ -52,6 +52,7 @@ void SayTeamHook(const CCommandContext& ctx, CCommand& args)
 	{
 		CPlayer* player = g_AdminSystem.GetPlayer(iCommandPlayerSlot.Get());
 		if(player != nullptr && player->IsGagged()) UTIL_SayTeam(ctx, args);
+		else UTIL_SayTeam(ctx, args);
 	}
 	else UTIL_SayTeam(ctx, args);
 }
@@ -61,9 +62,10 @@ void SayHook(const CCommandContext& ctx, CCommand& args)
 	if(iCommandPlayerSlot.Get() > 0)
 	{
 		CPlayer* player = g_AdminSystem.GetPlayer(iCommandPlayerSlot.Get());
-		if(player != nullptr && player->IsGagged()) UTIL_SayTeam(ctx, args);
+		if(player != nullptr && player->IsGagged()) UTIL_Say(ctx, args);
+		else UTIL_Say(ctx, args);
 	}
-	else UTIL_SayTeam(ctx, args);
+	else UTIL_Say(ctx, args);
 }
 
 bool FASTCALL IsHearingClient(void* serverClient, int index)
@@ -160,14 +162,14 @@ int AdminSystem::TargetPlayerString(const char* target)
 		CPlayerUserId PlayerUserID = engine->GetPlayerUserId(userid);
 		if (PlayerUserID.Get() != -1)
 		{
-			return PlayerUserID.Get();
+			return userid;
 		}
 	}
 	else
 	{
-		for (int i = 0; i < gpGlobals->maxClients; i++)
+		for (int i = 0; i < 64; i++)
 		{
-			if (m_vecPlayers[i] == nullptr)
+			if (m_vecPlayers[i] == nullptr || m_vecPlayers[i]->IsFakeClient())
 				continue;
 
 			CCSPlayerController* player = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(i + 1));
@@ -175,7 +177,7 @@ int AdminSystem::TargetPlayerString(const char* target)
 			if (!player)
 				continue;
 
-			if (strstr(player->m_iszPlayerName(), target))
+			if (strstr(engine->GetClientConVarValue(i, "name"), target))
 			{
 				return i;
 			}
@@ -987,15 +989,16 @@ CON_COMMAND_CHAT(status, "status")
 {
 	bool bFound = false;
 	char szBuffer[256];
-	for (int i = 0; i < gpGlobals->maxClients; i++)
+	for (int i = 0; i < 64; i++)
 	{
-		if(engine->GetPlayerUserId(i).Get() == -1)
-			continue;
 		CCSPlayerController *pTarget = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(i + 1));
+
+		if(!pTarget)
+			continue;
 
 		CPlayer* pTargetPlayer = g_AdminSystem.GetPlayer(i);
 
-		if (!pTarget || pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
+		if (pTargetPlayer == nullptr || pTargetPlayer->IsFakeClient())
 			continue;
 
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), "%i.%s", i, pTarget->m_iszPlayerName());
@@ -1594,7 +1597,7 @@ const char* AdminSystem::GetLicense()
 
 const char* AdminSystem::GetVersion()
 {
-	return "2.1.1";
+	return "2.1.2";
 }
 
 const char* AdminSystem::GetDate()
