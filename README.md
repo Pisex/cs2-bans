@@ -4,16 +4,17 @@ My Discord server - https://discord.com/invite/g798xERK5Y
 - [ ]  ...
 
 ## Require
-- CS2 Serveur (Linux or Window)
+- CS2 Server (Linux or Window)
 - Remove server hibernation `sv_hibernate_when_empty 0`
 - mysql_mm plugins by Poggu : https://github.com/Poggicek/mysql_mm (In the release archive)
+- Utils Api by Pisex : https://github.com/pisex/cs2-menus (In the release archive)
 - Specify database data in the config
 
 ## Commands
 Admin functions can be used both in the console(mm_*) and in chat(!*)
 The plugin includes the following commands:
 - `!status` - Shows player userid.
-- `!admin` - Display available commands.
+- `!admin` - Display admin menu.
 - `!ban <#userid|name> <duration(minutes)/0 (permanent)> <reason>` - Allows you to block a player(ADMFLAG_BAN)
 - `!unban <steamid> - unban` - Allows you to unblock a player(ADMFLAG_UNBAN)
 - `!silence <#userid|name> <duration(minutes)/0 (permanent)> <reason>` - Allows you to block voice and chat of a player (ADMFLAG_CHAT)
@@ -27,18 +28,17 @@ The plugin includes the following commands:
 - `!kick <#userid|name>` - Allows you to kick a player (ADMFLAG_KICK)
 - `!who <optional #userid|name>` - Allows you to recognize the player (ADMFLAG_GENERIC)
 - `!rcon <command>` - Allows you to send a command on behalf of the console (ADMFLAG_RCON)
-- `!freeze <#userid|name> <duration>` - Allows you to freeze a player (ADMFLAG_SLAY)
-- `!unfreeze <#userid|name>` - Allows you to unfreeze a player (ADMFLAG_SLAY)
 - `!slay <#userid|name>` - Allows you to kill a player (ADMFLAG_SLAY)
 - `!slap <#userid|name> <optional damage>` - Allows you to slap a player (ADMFLAG_SLAY)
 - `!setteam <#userid|name> <team (0-3)>` - Allows you to change a player's command(without death) (ADMFLAG_SLAY)
 - `!changeteam <#userid|name> <team (0-3)>` - Allows you to change a player's command(with death) (ADMFLAG_SLAY)
 - `!map <mapname>` - Allows you to change the map (ADMFLAG_CHANGEMAP)
 - `!noclip <optional #userid|name>` - Allows you to enable noclip (ADMFLAG_CHEATS)
-- `!reload_admins` - Allows you to reload the list of administrators (ADMFLAG_ROOT)
 - `!add_admin <admin_name> <steamid64> <duration(minutes)/0 (permanent)> <flags> <immunity> <optional comment>` - Allows you to add an administrator (ADMFLAG_ROOT)
 - `!remove_admin <steamid64>` - Allows you to remove an administrator (ADMFLAG_ROOT)
 
 ## Configuration
 - Databases file: `addons/configs/databases.cfg`
+- Maps file: `addons/configs/maplist.ini`
+- Times and Reason file: `addons/configs/admin.ini`
 - Translation file: `addons/translations/admin_system.phrases.txt`

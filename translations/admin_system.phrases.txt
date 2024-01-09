@@ -1,7 +1,153 @@
 "Phrases"
 {
-    "language"  "ua"
-    
+	"SelectPlayer"
+	{
+		"ru"	"Выберите игрока"
+		"ua"	"Виберіть гравця"
+		"en"	"Choose a player"
+	}
+	"SelectTime"
+	{
+		"ru"    "Выберите время наказания"
+		"ua"    "Виберіть час покарання"
+		"en"    "Select punishment time"
+	}
+	"SelectReason"
+	{
+		"ru"    "Выберите причину"
+		"ua"    "Виберіть причину"
+		"en"    "Select reason"
+	}
+	"BanPlayer"
+	{
+		"ru"    "Забанить игрока"
+		"ua"    "Забанити гравця"
+		"en"    "Ban player"
+	}
+	"MutePlayer"
+	{
+		"ru"    "Мут войса игрока"
+		"ua"    "Приглушити голос гравця"
+		"en"    "Mute player's voice"
+	}
+	"GagPlayer"
+	{
+		"ru"    "Мут чата игрока"
+		"ua"    "Приглушити чат гравця"
+		"en"    "Mute player's chat"
+	}
+	"SilencePlayer"
+	{
+		"ru"    "Общий мут игрока"
+		"ua"    "Загальний мут гравця"
+		"en"    "Mute player globally"
+	}
+	"KickPlayer"
+	{
+		"ru"    "Кикнуть игрока"
+		"ua"    "Вигнати гравця"
+		"en"    "Kick player"
+	}
+	"SlayPlayer"
+	{
+		"ru"    "Убить игрока"
+		"ua"    "Вбити гравця"
+		"en"    "Slay player"
+	}
+	"SlapPlayer"
+	{
+		"ru"    "Шлёпнуть игрока"
+		"ua"    "Вдарити гравця"
+		"en"    "Slap player"
+	}
+	"WhoPlayer"
+	{
+		"ru"    "Опознать игрока"
+		"ua"    "Визначити гравця"
+		"en"    "Identify player"
+	}
+	"ChangeTeamPlayer"
+	{
+		"ru"    "Сменить команду игрока"
+		"ua"    "Змінити команду гравця"
+		"en"    "Change player's team"
+	}
+	"SelectTeam"
+	{
+		"ru"    "Выберите команду"
+		"ua"    "Виберіть команду"
+		"en"    "Select team"
+	}
+	"TeamSpec"
+	{
+		"ru"    "Наблюдатели"
+		"ua"    "Спостерігачі"
+		"en"    "Spectators"
+	}
+	"TeamCT"
+	{
+		"ru"    "Контр-террорист"
+		"ua"    "Контр-терорист"
+		"en"    "Counter-Terrorist"
+	}
+	"TeamT"
+	{
+		"ru"    "Террорист"
+		"ua"    "Терорист"
+		"en"    "Terrorist"
+	}
+	"NoclipPlayer"
+	{
+		"ru"    "Полёт"
+		"ua"    "Політ"
+		"en"    "Noclip"
+	}
+	"ChangeMap"
+	{
+		"ru"    "Сменить карту"
+		"ua"    "Змінити карту"
+		"en"    "Change map"
+	}
+	"SelectMap"
+	{
+		"ru"    "Выберите карту"
+		"ua"    "Виберіть карту"
+		"en"    "Select map"
+	}
+	"Player Leave"
+	{
+		"en"		"Your selected {BLUE} player {DEFAULT} has left the server."
+		"ua"		"Обраний вами {BLUE}гравець {DEFAULT}вийшов із сервера"
+		"ru"		"Выбранный вами {BLUE}игрок {DEFAULT}вышел с сервера"
+	}
+	"Admin Menu"
+	{
+		"en"		"Admin Menu"
+		"ua"		"Меню адміністратора"
+		"ru"		"Меню администратора"
+	}
+	
+	"PlayerCommands"
+	{
+		"en"		"Player Commands"
+		"ua"		"Управління гравцями"
+		"ru"		"Управление игроками"
+	}
+
+	"ServerCommands"
+	{
+		"en"		"Server Commands"
+		"ua"		"Управління сервером"
+		"ru"		"Управление сервером"
+	}
+
+	"VotingCommands"
+	{
+		"en"		"Voting Commands"
+		"ua"		"Управління голосуваннями"
+		"ru"		"Управление голосованиями"
+	}
+
 	"Prefix"
 	{
 		"en"	"[ADMIN]"

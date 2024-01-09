@@ -19,19 +19,84 @@
 #include "sdk/CBaseEntity.h"
 #include "sdk/CBasePlayerPawn.h"
 #include "sdk/CCSPlayerController.h"
+#include "sdk/CGameRules.h"
 #include "sdk/module.h"
 #include "include/mysql_mm.h"
+#include "include/menus.h"
+#include "include/admin.h"
 #include "funchook.h"
 #include <map>
 #include <ctime>
 #include <array>
+#include <queue>
 #include <chrono>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 class CChatCommand;
 
 typedef void (*FnChatCommandCallback_t)(int iSlot, const CCommand &args, CCSPlayerController *player);
 
 extern CUtlMap<uint32, CChatCommand*> g_CommandList;
+
+class Timer {
+public:
+    void AddTimer(std::function<void()> fn, uint64_t timeMilliseconds) {
+        std::lock_guard<std::mutex> lock(timerMutex);
+        auto currentTime = std::chrono::steady_clock::now();
+        timerQueue.push({ currentTime + std::chrono::milliseconds(timeMilliseconds), fn });
+        if (timerQueue.top().timeToFire == currentTime + std::chrono::milliseconds(timeMilliseconds)) {
+            timerCV.notify_one(); // Notify the thread if the new timer is the earliest one
+        }
+    }
+
+    void Start() {
+        timerThread = std::thread([this]() {
+            while (true) {
+                std::unique_lock<std::mutex> lock(timerMutex);
+                if (timerQueue.empty()) {
+                    timerCV.wait(lock); // Wait if the queue is empty
+                } else {
+                    auto currentTime = std::chrono::steady_clock::now();
+                    if (timerQueue.top().timeToFire <= currentTime) {
+                        auto fn = timerQueue.top().functionToCall;
+                        timerQueue.pop();
+                        lock.unlock();
+                        fn(); // Execute the function
+                    } else {
+                        timerCV.wait_until(lock, timerQueue.top().timeToFire); // Wait for the nearest timer
+                    }
+                }
+            }
+        });
+    }
+
+    void Stop() {
+        if (timerThread.joinable()) {
+            timerThread.join();
+        }
+    }
+
+    ~Timer() {
+        Stop();
+    }
+
+private:
+    struct TimerEvent {
+        std::chrono::steady_clock::time_point timeToFire;
+        std::function<void()> functionToCall;
+
+        bool operator>(const TimerEvent& other) const {
+            return timeToFire > other.timeToFire;
+        }
+    };
+
+    std::priority_queue<TimerEvent, std::vector<TimerEvent>, std::greater<>> timerQueue;
+    std::mutex timerMutex;
+    std::condition_variable timerCV;
+    std::thread timerThread;
+};
 
 class CChatCommand
 {
@@ -75,6 +140,26 @@ private:
 
 #define CON_COMMAND_CHAT(name, description) CON_COMMAND_CHAT_FLAGS(name, description, ADMFLAG_NONE)
 
+class AdminApi : public IAdminApi
+{
+public:
+    std::map<std::string, AdminCategory> m_Categories;
+    std::map<std::string, std::map<std::string, AdminItem>> m_Items;
+	
+	bool IsAdminFlagSet(int iSlot, int iFlag);
+	bool ClientIsAdmin(int iSlot);
+    int GetClientAdminFlags(int iSlot);
+	int GetClientImmunity(int iSlot);
+	int ReadFlagString(const char* szFlags);
+    void RegAdminCategory(const char* szBack, const char* szFront, AdminCategoryCallback callback) override {
+		m_Categories[std::string(szBack)] = {std::string(szFront), callback};
+	}
+    void RegAdminItem(const char* szBackCategory, const char* szBack, const char* szFront, int iFlag, AdminItemCallback callback) override {
+		m_Items[std::string(szBackCategory)][std::string(szBack)] = {std::string(szFront), iFlag, callback};
+	}
+
+};
+
 class CPlayer
 {
 public:
@@ -84,46 +169,44 @@ public:
 		m_bAuthenticated = false;
 		m_iGagged = -1;
 		m_iMuted = -1;
-		m_SteamID = 0;
+		m_iSteamID = 0;
+		m_iFlags = 0;
+		m_iImmunity = 0;
+		m_sName = "\0";
+		m_iEnd = 0;
 	}
 
 	bool IsFakeClient() { return m_bFakeClient; }
 	bool IsAuthenticated() { return m_bAuthenticated; }
-	uint64 GetSteamId64() { return m_SteamID->ConvertToUint64(); }
-	const CSteamID* GetSteamId() { return m_SteamID; }
 	CPlayerSlot GetPlayerSlot() { return m_slot; }
 
 	void SetAuthenticated() { m_bAuthenticated = true; }
 	void SetMuted(int iDuration, int iEnd) { m_iMuted = iDuration != 0?iEnd:0; }
 	void SetGagged(int iDuration, int iEnd) { m_iGagged = iDuration != 0?iEnd:0; }
-	void SetSteamId(const CSteamID* steamID) { m_SteamID = steamID; }
 
 	int GetMuted() { return m_iMuted; }
 	int GetGagged() { return m_iGagged; }
 	bool IsMuted() { return (m_iMuted != -1 && (m_iMuted == 0 || std::time(0) < m_iMuted))?true:false; }
 	bool IsGagged() { return (m_iGagged != -1 && (m_iGagged == 0 || std::time(0) < m_iGagged))?true:false; }
+
+	void SetAdminImmunity(int iImmunity) { m_iImmunity = iImmunity; };
+	void SetAdminEnd(int iEnd) { m_iEnd = iEnd; };
+	void SetSteamID(uint64 iSteamID) { m_iSteamID = iSteamID; };
+	void SetAdminFlags(uint64 iFlags) { m_iFlags = iFlags; };
+	void SetAdminName(const char* sName) { m_sName = sName; };
+
+	int GetAdminImmunity() { return m_iImmunity; };
+	uint64_t GetAdminEnd() { return m_iEnd; };
+	uint64 GetSteamID() { return m_iSteamID; };
+	uint64 GetAdminFlags() { return m_iFlags; };
+	const char* GetAdminName() { return m_sName; };
 private:
 	CPlayerSlot m_slot;
-	const CSteamID* m_SteamID;
 	bool m_bFakeClient;
 	bool m_bAuthenticated;
 	uint64_t m_iMuted;
 	uint64_t m_iGagged;
-};
 
-class CAdmin
-{
-public:
-	CAdmin(uint64 iSteamID, uint64 iFlags, int iImmunity, const char* sName, uint64_t iEnd) : 
-		m_iSteamID(iSteamID), m_iFlags(iFlags), m_iImmunity(iImmunity), m_sName(sName), m_iEnd(iEnd)
-	{}
-
-	int GetImmunity() { return m_iImmunity; };
-	uint64_t GetEnd() { return m_iEnd; };
-	uint64 GetSteamID() { return m_iSteamID; };
-	uint64 GetFlags() { return m_iFlags; };
-	const char* GetName() { return m_sName; };
-private:
 	uint64 m_iSteamID;
 	uint64 m_iFlags;
 	int m_iImmunity;
@@ -138,13 +221,16 @@ public:
 	bool Unload(char* error, size_t maxlen);
 	bool LoadAdmins();
 	void AllPluginsLoaded();
-	CAdmin* FindAdmin(int slot);
-	bool IsAdminFlagSet(CAdmin aAdmin, uint64 iFlag, int iSlot);
+	void* OnMetamodQuery(const char* iface, int* ret);
+	bool IsAdminFlagSet(int iSlot, uint64 iFlag);
+	bool IsAdmin(int iSlot);
 	int TargetPlayerString(const char* target);
-	CPlayer* GetPlayer(int slot);
-	void CreateTimer(std::function<void()> fn, uint64_t time);
+	// void CreateTimer(std::function<void()> fn, uint64_t time);
 	const char* Translate(const char* phrase);
-	bool CheckImmunity(int iTarget, int iAdmin, CCSPlayerController *player);
+	bool CheckImmunity(int iTarget, int iAdmin);
+	void ParseChatCommand(int iSlot, const char *pMessage, CCSPlayerController *pController);
+	void CheckInfractions(int PlayerSlot, int bAdmin);
+	uint64 ParseFlags(const char* pszFlags);
 private:
 	const char* GetAuthor();
 	const char* GetName();
@@ -156,23 +242,8 @@ private:
 	const char* GetLogTag();
 
 private: // Hooks
-	void StartupServer(const GameSessionConfiguration_t& config, ISource2WorldSession*, const char*);
-	void Hook_DispatchConCommand(ConCommandHandle cmd, const CCommandContext& ctx, const CCommand& args);
-	void Hook_OnClientDisconnect(CPlayerSlot slot, int reason, const char *pszName, uint64 xuid, const char *pszNetworkID);
 	bool Hook_ClientConnect( CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, bool unk1, CBufferString *pRejectReason );
 	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
-	void Hook_GameServerSteamAPIActivated();
-
-	void ParseChatCommand(int iSlot, const char *pMessage, CCSPlayerController *pController);
-	void CheckInfractions(int slot);
-
-	uint64 ParseFlags(const char* pszFlags);
-
-	std::deque<std::function<void()>> m_Timer;
-	std::deque<uint64_t> m_TimerTime;
-
-	CUtlVector<CAdmin> m_vecAdmins;
-	CPlayer *m_vecPlayers[MAXPLAYERS];
 };
 
 #endif //_INCLUDE_METAMOD_SOURCE_STUB_PLUGIN_H_
