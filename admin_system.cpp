@@ -197,8 +197,6 @@ void AdminSystem::ParseChatCommand(int iSlot, const char *pMessage, CCSPlayerCon
 	args.Tokenize(pMessage);
 	uint16 index = g_CommandList.Find(hash_32_fnv1a_const(args[0]));
 
-	Msg("DEBUG2: %s | %s\n", args[0], pMessage);
-
 	if (g_CommandList.IsValidIndex(index))
 	{
 		(*g_CommandList[index])(iSlot, args, pController);
