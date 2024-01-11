@@ -7,7 +7,7 @@ My Discord server - https://discord.com/invite/g798xERK5Y
 - CS2 Server (Linux or Window)
 - Remove server hibernation `sv_hibernate_when_empty 0`
 - mysql_mm plugins by Poggu : https://github.com/Poggicek/mysql_mm (In the release archive)
-- Utils Api by Pisex : https://github.com/pisex/cs2-menus (In the release archive)
+- Utils Api by Pisex : https://github.com/pisex/cs2-menus
 - Specify database data in the config
 
 ## Commands
