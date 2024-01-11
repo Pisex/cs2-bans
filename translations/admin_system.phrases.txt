@@ -1,5 +1,11 @@
 "Phrases"
 {
+	"SlapDamage"
+	{
+		"ru"	"Выберите количество урона"
+		"ua"	"Виберіть кількість шкоди"
+		"en"	"Choose the amount of damage"
+	}
 	"SelectPlayer"
 	{
 		"ru"	"Выберите игрока"

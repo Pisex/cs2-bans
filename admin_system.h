@@ -146,6 +146,12 @@ public:
     std::map<std::string, AdminCategory> m_Categories;
     std::map<std::string, std::map<std::string, AdminItem>> m_Items;
 	
+	void BanPlayer(int iSlot, int iAdmin, int iTime, const char* szReason);
+    void MutePlayer(int iSlot, int iAdmin, int iTime, const char* szReason);
+    void GagPlayer(int iSlot, int iAdmin, int iTime, const char* szReason);
+	void OfflineBanPlayer(uint64_t SteamID, const char* szNick, int iAdmin, int iTime, const char* szReason);
+	bool ClientInMuted(int iSlot);
+	bool ClientInGagged(int iSlot);
 	bool IsAdminFlagSet(int iSlot, int iFlag);
 	bool ClientIsAdmin(int iSlot);
     int GetClientAdminFlags(int iSlot);

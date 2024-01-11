@@ -16,6 +16,7 @@
 #define Utils_INTERFACE "IUtilsApi"
 
 typedef std::function<bool(int iSlot, const char* szContent)> CommandCallback;
+typedef std::function<bool(int iSlot, const char* szContent, bool bMute)> CommandCallbackPost;
 typedef std::function<void(const char* szName, IGameEvent* pEvent, bool bDontBroadcast)> EventCallback;
 typedef std::function<void()> StartupCallback;
 
@@ -37,7 +38,8 @@ public:
     virtual void OnGetGameRules(SourceMM::PluginId id, StartupCallback fn) = 0;
 
     virtual void RegCommand(SourceMM::PluginId id, const std::vector<std::string> &console, const std::vector<std::string> &chat, const CommandCallback &callback) = 0;
-    virtual void AddChatListener(SourceMM::PluginId id, CommandCallback callback) = 0;
+    virtual void AddChatListenerPre(SourceMM::PluginId id, CommandCallback callback) = 0;
+    virtual void AddChatListenerPost(SourceMM::PluginId id, CommandCallbackPost callback) = 0;
     virtual void HookEvent(SourceMM::PluginId id, const char* sName, EventCallback callback) = 0;
 
     virtual void SetStateChanged(CBaseEntity* entity, const char* sClassName, const char* sFieldName, int extraOffset = 0) = 0;

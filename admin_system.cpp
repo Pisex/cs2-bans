@@ -432,6 +432,52 @@ void ReasonMenu(int iSlot)
 	g_pMenus->DisplayPlayerMenu(hMenu, iSlot);
 }
 
+void SlapMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlot)
+{
+	if(iItem < 7)
+	{
+		int iDamage = std::stoi(szBack);
+		CCSPlayerController *pTarget = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(g_iTarget[iSlot] + 1));
+
+		CBasePlayerPawn *pPawn = pTarget->m_hPawn();
+
+		if (!pPawn)
+			return;
+
+		Vector velocity = pPawn->m_vecAbsVelocity();
+		velocity.x += ((rand() % 180) + 50) * (((rand() % 2) == 1) ? -1 : 1);
+		velocity.y += ((rand() % 180) + 50) * (((rand() % 2) == 1) ? -1 : 1);
+		velocity.z += rand() % 200 + 100;
+		pPawn->SetAbsVelocity(velocity);
+			
+		if (iDamage > 0)
+			pPawn->TakeDamage(iDamage);
+		
+		ClientPrintAll(g_AdminSystem.Translate("Slapped"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pTarget->m_iszPlayerName());
+		if(pPawn->m_iHealth() > 0) g_pUtils->SetStateChanged(pPawn, "CBaseEntity", "m_iHealth");
+	}
+	else if(iItem == 7) ShowPlayerList(iSlot);
+}
+
+void SlapMenu(int iSlot)
+{
+	Menu hMenu;
+	g_pMenus->SetTitleMenu(hMenu, g_vecPhrases[std::string("SlapDamage")].c_str());
+
+	g_pMenus->AddItemMenu(hMenu, "0", "0");
+	g_pMenus->AddItemMenu(hMenu, "1", "1");
+	g_pMenus->AddItemMenu(hMenu, "5", "5");
+	g_pMenus->AddItemMenu(hMenu, "10", "10");
+	g_pMenus->AddItemMenu(hMenu, "20", "20");
+	g_pMenus->AddItemMenu(hMenu, "50", "50");
+	g_pMenus->AddItemMenu(hMenu, "99", "99");
+	
+	g_pMenus->SetExitMenu(hMenu, true);
+	g_pMenus->SetBackMenu(hMenu, true);
+	g_pMenus->SetCallback(hMenu, SlapMenuHandle);
+	g_pMenus->DisplayPlayerMenu(hMenu, iSlot);
+}
+
 void TeamMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlot)
 {
 	if(iItem < 7)
@@ -493,6 +539,10 @@ void PlayersMenuHandle(const char* szBack, const char* szFront, int iItem, int i
 			ClientPrintAll(g_AdminSystem.Translate("Slayed"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			pController2->m_hPlayerPawn().Get()->CommitSuicide(false, true);
 		}
+		else if(!strcmp(g_szItem[iSlot], "slap"))
+		{
+			SlapMenu(iSlot);
+		}
 		else if(!strcmp(g_szItem[iSlot], "who"))
 		{
 			CPlayer* pTargetPlayer = m_vecPlayers[g_iTarget[iSlot]];
@@ -522,19 +572,19 @@ void PlayersMenuHandle(const char* szBack, const char* szFront, int iItem, int i
 		}
 		else if(!strcmp(g_szItem[iSlot], "noclip"))
 		{
-			if (pController2->m_iHealth() <= 0)
+			if (pController2->m_hPlayerPawn()->m_iHealth() <= 0)
 			{
 				ClientPrint(iSlot,  "%s", g_AdminSystem.Translate("NoclipDead"));
 				return;
 			}
-			if(pController2->m_MoveType() == MOVETYPE_NOCLIP)
+			if(pController2->m_hPlayerPawn()->m_MoveType() == MOVETYPE_NOCLIP)
 			{
-				pController2->m_MoveType() = MOVETYPE_WALK;
+				pController2->m_hPlayerPawn()->m_MoveType() = MOVETYPE_WALK;
 				ClientPrintAll(g_AdminSystem.Translate("NoclipDisable"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			}
 			else
 			{
-				pController2->m_MoveType() = MOVETYPE_NOCLIP;
+				pController2->m_hPlayerPawn()->m_MoveType() = MOVETYPE_NOCLIP;
 				ClientPrintAll(g_AdminSystem.Translate("NoclipEnable"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			}
 		}
@@ -657,10 +707,11 @@ void StartupServer()
 	static bool bDone = false;
 	if (!bDone)
 	{
-		g_pUtils->AddChatListener(g_PLID, ChatListener);
-		g_pUtils->RegCommand(g_PLID, {}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
+		g_pUtils->AddChatListenerPre(g_PLID, ChatListener);
+		g_pUtils->RegCommand(g_PLID, {"mm_ban", "mm_unban", "mm_mute", "mm_unmute", "mm_gag", "mm_ungag", "mm_silence", "mm_unsilence", "mm_status", "mm_kick", "mm_who", "mm_rcon", "mm_noclip", "mm_setteam", "mm_changeteam", "mm_slap", "mm_slay", "mm_map", "mm_reload_admins", "mm_add_admin", "mm_remove_admin"}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
 			CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
 			g_AdminSystem.ParseChatCommand(iSlot, szContent+1, pPlayerController);
+			g_AdminSystem.ParseChatCommand(iSlot, szContent+3, pPlayerController);
 			return false;
 		});
 
@@ -1720,6 +1771,7 @@ CON_COMMAND_CHAT_FLAGS(slap, "slap a player", ADMFLAG_SLAY)
 		pPawn->TakeDamage(iDamage);
 	
 	ClientPrintAll(g_AdminSystem.Translate("Slapped"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
+	if(pPawn->m_iHealth() > 0) g_pUtils->SetStateChanged(pPawn, "CBaseEntity", "m_iHealth");
 }
 
 CON_COMMAND_CHAT_FLAGS(slay, "slay a player", ADMFLAG_SLAY)
@@ -1906,6 +1958,53 @@ int AdminApi::GetClientImmunity(int iSlot) {
 	return m_vecPlayers[iSlot]->GetAdminImmunity();
 }
 
+void AdminApi::BanPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
+{
+	char szQuery[512];
+	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("BanPermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
+	else ClientPrintAll(g_AdminSystem.Translate("Ban"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime);
+	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
+	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	engine->DisconnectClient(CPlayerSlot(iSlot), 41);
+}
+
+void AdminApi::MutePlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
+{
+	char szQuery[512];
+	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("MutePermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
+	else ClientPrintAll(g_AdminSystem.Translate("Mute"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime);
+	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
+	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	m_vecPlayers[iSlot]->SetMuted(iTime, std::time(0)+iTime);
+}
+
+void AdminApi::GagPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
+{
+	char szQuery[512];
+	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("GagPermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
+	else ClientPrintAll(g_AdminSystem.Translate("Gag"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime);
+	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
+	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	m_vecPlayers[iSlot]->SetGagged(iTime*60, std::time(0)+iTime*60);
+}
+
+bool AdminApi::ClientInMuted(int iSlot)
+{
+	return m_vecPlayers[iSlot]->IsMuted();
+}
+
+bool AdminApi::ClientInGagged(int iSlot)
+{
+	return m_vecPlayers[iSlot]->IsGagged();
+}
+
+void AdminApi::OfflineBanPlayer(uint64_t SteamID, const char* szNick, int iAdmin, int iTime, const char* szReason)
+{
+	char szQuery[512];
+	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), SteamID, iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(szNick).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
+	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+}
+
 ///////////////////////////////////////
 const char* AdminSystem::GetLicense()
 {
@@ -1914,7 +2013,7 @@ const char* AdminSystem::GetLicense()
 
 const char* AdminSystem::GetVersion()
 {
-	return "2.5";
+	return "2.5.1";
 }
 
 const char* AdminSystem::GetDate()

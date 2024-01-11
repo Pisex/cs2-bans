@@ -61,6 +61,12 @@ public:
     virtual bool ClientIsAdmin(int iSlot) = 0;
     virtual int GetClientAdminFlags(int iSlot) = 0;
     virtual int GetClientImmunity(int iSlot) = 0;
+    virtual bool ClientInMuted(int iSlot) = 0;
+    virtual bool ClientInGagged(int iSlot) = 0;
     virtual void RegAdminCategory(const char* szBack, const char* szFront, AdminCategoryCallback callback = nullptr) = 0;
     virtual void RegAdminItem(const char* szBackCategory, const char* szBack, const char* szFront, int iFlag, AdminItemCallback callback) = 0;
+    virtual void OfflineBanPlayer(uint64_t SteamID, const char* szNick, int iAdmin, int iTime, const char* szReason) = 0;
+    virtual void BanPlayer(int iSlot, int iAdmin, int iTime, const char* szReason) = 0;
+    virtual void MutePlayer(int iSlot, int iAdmin, int iTime, const char* szReason) = 0;
+    virtual void GagPlayer(int iSlot, int iAdmin, int iTime, const char* szReason) = 0;
 };
