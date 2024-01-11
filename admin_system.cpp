@@ -727,7 +727,7 @@ void StartupServer()
 
 		
 		g_pAdminCore->RegAdminItem("PlayerCommands", "ban", g_vecPhrases[std::string("BanPlayer")].c_str(), 		ADMFLAG_BAN, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "mute", g_vecPhrases[std::string("MutePlayer")].c_str(), 		ADMFLAG_UNBAN, 		OnPlayerCommands);
+		g_pAdminCore->RegAdminItem("PlayerCommands", "mute", g_vecPhrases[std::string("MutePlayer")].c_str(), 		ADMFLAG_CHAT, 		OnPlayerCommands);
 		g_pAdminCore->RegAdminItem("PlayerCommands", "gag", g_vecPhrases[std::string("GagPlayer")].c_str(), 		ADMFLAG_CHAT, 		OnPlayerCommands);
 		g_pAdminCore->RegAdminItem("PlayerCommands", "silence", g_vecPhrases[std::string("SilencePlayer")].c_str(), ADMFLAG_CHAT, 		OnPlayerCommands);
 		g_pAdminCore->RegAdminItem("PlayerCommands", "kick", g_vecPhrases[std::string("KickPlayer")].c_str(), 		ADMFLAG_KICK, 		OnPlayerCommands);
