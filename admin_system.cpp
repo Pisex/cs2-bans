@@ -983,6 +983,7 @@ bool AdminSystem::Hook_ClientConnect( CPlayerSlot slot, const char *pszName, uin
 	if(xuid <= 0) m_vecPlayers[slot.Get()] = new CPlayer(slot, true);
 	else m_vecPlayers[slot.Get()] = new CPlayer(slot, false);
 
+	m_vecPlayers[slot.Get()]->SetSteamID(xuid);
 	CheckInfractions(slot.Get(), false);
 
 	RETURN_META_VALUE(MRES_IGNORED, true);
