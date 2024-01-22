@@ -24,7 +24,9 @@ IMenusApi* g_pMenus;
 char g_szCategory[64][64];
 char g_szItem[64][64];
 
-Timer g_Timer;
+float g_flUniversalTime;
+float g_flLastTickedTime;
+bool g_bHasTicked;
 
 int g_iTarget[64];
 int g_iReason[64];
@@ -610,11 +612,9 @@ void ShowPlayerList(int iSlot)
 
 		if(!pController->m_hPlayerPawn().Get())
 			continue;
-
-		// if(i == iSlot) continue;
 		
-		// if(g_pAdminCore->GetClientImmunity(iSlot) < g_pAdminCore->GetClientImmunity(i))
-		// 	continue;
+		if(g_pAdminCore->GetClientImmunity(iSlot) < g_pAdminCore->GetClientImmunity(i))
+			continue;
 
 		char sBuff[16], sBuff2[100];
 		g_SMAPI->Format(sBuff, sizeof(sBuff), "%i", i);
@@ -649,10 +649,11 @@ void MapMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlot
 			g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map"), szFront);
 			ClientPrintAll( "%s", szBuffer);
 
-			g_Timer.AddTimer([sCommand, szBack]()
-			{
+			new CTimer(5.0, [sCommand]()
+			{		
 				engine->ServerCommand(sCommand);
-			}, 5000);
+				return -1.0f;
+			});
 			return;
 		}
 
@@ -660,10 +661,11 @@ void MapMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlot
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map"), szBack);
 		ClientPrintAll( "%s", szBuffer);
 		
-		g_Timer.AddTimer([szBack]()
-		{
+		new CTimer(5.0, [szBack]()
+		{		
 			engine->ChangeLevel(szBack, nullptr);
-		}, 5000);
+			return -1.0f;
+		});
 	}
 	else if(iItem == 7) AdminMenu(iSlot);
 }
@@ -701,6 +703,9 @@ void OnServerCommands(const char* szName, int iSlot)
 
 void StartupServer()
 {
+	g_pNetworkGameServer = g_pNetworkServerService->GetIGameServer();
+	gpGlobals = g_pNetworkGameServer->GetGlobals();
+	g_bHasTicked = false;
 	g_pGameEntitySystem = g_pUtils->GetCGameEntitySystem();
 	g_pEntitySystem = g_pUtils->GetCEntitySystem();
 
@@ -708,16 +713,12 @@ void StartupServer()
 	if (!bDone)
 	{
 		g_pUtils->AddChatListenerPre(g_PLID, ChatListener);
-		g_pUtils->RegCommand(g_PLID, {"mm_ban", "mm_unban", "mm_mute", "mm_unmute", "mm_gag", "mm_ungag", "mm_silence", "mm_unsilence", "mm_status", "mm_kick", "mm_who", "mm_rcon", "mm_noclip", "mm_setteam", "mm_changeteam", "mm_slap", "mm_slay", "mm_map", "mm_reload_admins", "mm_add_admin", "mm_remove_admin"}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
+		g_pUtils->RegCommand(g_PLID, {}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
 			CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
-			g_AdminSystem.ParseChatCommand(iSlot, szContent+1, pPlayerController);
-			g_AdminSystem.ParseChatCommand(iSlot, szContent+3, pPlayerController);
-			return false;
-		});
-
-		g_pUtils->RegCommand(g_PLID, {"mm_reload_infractions"}, {}, [](int iSlot, const char* szContent){
-			CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
-			g_AdminSystem.ParseChatCommand(iSlot, szContent+3, pPlayerController);
+			char szCommand[256];
+			g_SMAPI->Format(szCommand, sizeof(szCommand), szContent);
+			szCommand[V_strlen(szCommand) - 1] = 0;
+			g_AdminSystem.ParseChatCommand(iSlot, szCommand+1, pPlayerController);
 			return false;
 		});
 
@@ -953,8 +954,6 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 	g_pAdminApi = new AdminApi();
 	g_pAdminCore = g_pAdminApi;
 
-	g_Timer.Start();
-
 	return true;
 }
 
@@ -964,8 +963,7 @@ bool AdminSystem::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK_MEMFUNC(IServerGameClients, ClientConnect, g_pSource2GameClients, this, &AdminSystem::Hook_ClientConnect, false);
 
 	ConVar_Unregister();
-
-	g_Timer.Stop();
+	RemoveTimers();
 
 	if (g_pConnection)
 		g_pConnection->Destroy();
@@ -989,27 +987,44 @@ bool AdminSystem::Hook_ClientConnect( CPlayerSlot slot, const char *pszName, uin
 	RETURN_META_VALUE(MRES_IGNORED, true);
 }
 
-// void AdminSystem::CreateTimer(std::function<void()> fn, uint64_t time)
-// {
-// 	m_Timer.push_back(fn);
-//     auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-// 	m_TimerTime.push_back(time*1000+millis);
-// }
-
 void AdminSystem::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 {
-    // auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	// while (!m_Timer.empty())
-	// {
-	// 	uint64_t time = m_TimerTime.front();
-	// 	if(millis >= time)
-	// 	{
-	// 		m_Timer.front()();
-	// 		m_Timer.pop_front();
-	// 		m_TimerTime.pop_front();
-	// 	}
-	// 	else break;
-	// }
+    if (simulating && g_bHasTicked)
+	{
+		g_flUniversalTime += gpGlobals->curtime - g_flLastTickedTime;
+	}
+	else
+	{
+		g_flUniversalTime += gpGlobals->interval_per_tick;
+	}
+
+	g_flLastTickedTime = gpGlobals->curtime;
+	g_bHasTicked = true;
+
+	for (int i = g_timers.Tail(); i != g_timers.InvalidIndex();)
+	{
+		auto timer = g_timers[i];
+
+		int prevIndex = i;
+		i = g_timers.Previous(i);
+
+		if (timer->m_flLastExecute == -1)
+			timer->m_flLastExecute = g_flUniversalTime;
+
+		// Timer execute 
+		if (timer->m_flLastExecute + timer->m_flInterval <= g_flUniversalTime)
+		{
+			if (!timer->Execute())
+			{
+				delete timer;
+				g_timers.Remove(prevIndex);
+			}
+			else
+			{
+				timer->m_flLastExecute = g_flUniversalTime;
+			}
+		}
+	}
 
 	if(g_iLastTime == 0) g_iLastTime = std::time(0);
 	else if(std::time(0) - g_iLastTime >= 1 && g_pEntitySystem)
@@ -1824,10 +1839,11 @@ CON_COMMAND_CHAT_FLAGS(map, "change map", ADMFLAG_CHANGEMAP)
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map"), args[1]);
 		ClientPrintAll( "%s", szBuffer);
 
-		g_Timer.AddTimer([sCommand, szMapName]()
-		{
+		new CTimer(5.0, [sCommand]()
+		{		
 			engine->ServerCommand(sCommand);
-		}, 5000);
+			return -1.0f;
+		});
 		return;
 	}
 
@@ -1835,10 +1851,11 @@ CON_COMMAND_CHAT_FLAGS(map, "change map", ADMFLAG_CHANGEMAP)
 	g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map"), szMapName);
 	ClientPrintAll( "%s", szBuffer);
 	
-	g_Timer.AddTimer([szMapName]()
-	{
+	new CTimer(5.0, [szMapName]()
+	{		
 		engine->ChangeLevel(szMapName, nullptr);
-	}, 5000);
+		return -1.0f;
+	});
 }
 
 CON_COMMAND_CHAT_FLAGS(add_admin, "add admin", ADMFLAG_ROOT)
@@ -1963,7 +1980,7 @@ void AdminApi::BanPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
 {
 	char szQuery[512];
 	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("BanPermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
-	else ClientPrintAll(g_AdminSystem.Translate("Ban"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime);
+	else ClientPrintAll(g_AdminSystem.Translate("Ban"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
 	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
 	engine->DisconnectClient(CPlayerSlot(iSlot), 41);
@@ -1973,7 +1990,7 @@ void AdminApi::MutePlayer(int iSlot, int iAdmin, int iTime, const char* szReason
 {
 	char szQuery[512];
 	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("MutePermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
-	else ClientPrintAll(g_AdminSystem.Translate("Mute"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime);
+	else ClientPrintAll(g_AdminSystem.Translate("Mute"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
 	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
 	m_vecPlayers[iSlot]->SetMuted(iTime, std::time(0)+iTime);
@@ -1983,7 +2000,7 @@ void AdminApi::GagPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
 {
 	char szQuery[512];
 	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("GagPermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
-	else ClientPrintAll(g_AdminSystem.Translate("Gag"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime);
+	else ClientPrintAll(g_AdminSystem.Translate("Gag"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
 	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
 	m_vecPlayers[iSlot]->SetGagged(iTime*60, std::time(0)+iTime*60);
@@ -2014,7 +2031,7 @@ const char* AdminSystem::GetLicense()
 
 const char* AdminSystem::GetVersion()
 {
-	return "2.5.2";
+	return "2.5.3";
 }
 
 const char* AdminSystem::GetDate()

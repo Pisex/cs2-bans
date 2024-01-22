@@ -24,6 +24,7 @@
 #include "include/mysql_mm.h"
 #include "include/menus.h"
 #include "include/admin.h"
+#include "sdk/ctimer.h"
 #include "funchook.h"
 #include <map>
 #include <ctime>
@@ -39,64 +40,6 @@ class CChatCommand;
 typedef void (*FnChatCommandCallback_t)(int iSlot, const CCommand &args, CCSPlayerController *player);
 
 extern CUtlMap<uint32, CChatCommand*> g_CommandList;
-
-class Timer {
-public:
-    void AddTimer(std::function<void()> fn, uint64_t timeMilliseconds) {
-        std::lock_guard<std::mutex> lock(timerMutex);
-        auto currentTime = std::chrono::steady_clock::now();
-        timerQueue.push({ currentTime + std::chrono::milliseconds(timeMilliseconds), fn });
-        if (timerQueue.top().timeToFire == currentTime + std::chrono::milliseconds(timeMilliseconds)) {
-            timerCV.notify_one(); // Notify the thread if the new timer is the earliest one
-        }
-    }
-
-    void Start() {
-        timerThread = std::thread([this]() {
-            while (true) {
-                std::unique_lock<std::mutex> lock(timerMutex);
-                if (timerQueue.empty()) {
-                    timerCV.wait(lock); // Wait if the queue is empty
-                } else {
-                    auto currentTime = std::chrono::steady_clock::now();
-                    if (timerQueue.top().timeToFire <= currentTime) {
-                        auto fn = timerQueue.top().functionToCall;
-                        timerQueue.pop();
-                        lock.unlock();
-                        fn(); // Execute the function
-                    } else {
-                        timerCV.wait_until(lock, timerQueue.top().timeToFire); // Wait for the nearest timer
-                    }
-                }
-            }
-        });
-    }
-
-    void Stop() {
-        if (timerThread.joinable()) {
-            timerThread.join();
-        }
-    }
-
-    ~Timer() {
-        Stop();
-    }
-
-private:
-    struct TimerEvent {
-        std::chrono::steady_clock::time_point timeToFire;
-        std::function<void()> functionToCall;
-
-        bool operator>(const TimerEvent& other) const {
-            return timeToFire > other.timeToFire;
-        }
-    };
-
-    std::priority_queue<TimerEvent, std::vector<TimerEvent>, std::greater<>> timerQueue;
-    std::mutex timerMutex;
-    std::condition_variable timerCV;
-    std::thread timerThread;
-};
 
 class CChatCommand
 {

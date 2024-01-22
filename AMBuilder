@@ -35,6 +35,7 @@ for sdk_name in MMSPlugin.sdks:
     binary.sources += [
       'admin_system.cpp',
       os.path.join('sdk', 'schemasystem.cpp'),
+      os.path.join('sdk', 'ctimer.cpp'),
       os.path.join('sdk', 'module.cpp'),
       os.path.join('sdk', 'memaddr.cpp')
     ]
