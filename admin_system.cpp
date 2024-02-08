@@ -7,7 +7,6 @@ PLUGIN_EXPOSE(AdminSystem, g_AdminSystem);
 
 INetworkGameServer *g_pNetworkGameServer = nullptr;
 CGameEntitySystem* g_pGameEntitySystem = nullptr;
-IGameEventManager2* gameeventmanager = nullptr;
 CSchemaSystem* g_pCSchemaSystem = nullptr;
 CEntitySystem* g_pEntitySystem = nullptr;
 IVEngineServer2* engine = nullptr;
@@ -924,7 +923,6 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, g_pSource2Server, this, &AdminSystem::Hook_GameFrame, false);
 	SH_ADD_HOOK_MEMFUNC(IServerGameClients, ClientConnect, g_pSource2GameClients, this, &AdminSystem::Hook_ClientConnect, false );
 	
-	gameeventmanager = static_cast<IGameEventManager2*>(CallVFunc<IToolGameEventAPI*, 91>(g_pSource2Server));
 	ConVar_Register(FCVAR_GAMEDLL);
 
 	CModule libserver(g_pSource2Server);

@@ -11,6 +11,6 @@ public:
 
 	void ChangeTeam(int iTeam)
 	{
-		CALL_VIRTUAL(void, WIN_LINUX(90,89), this, iTeam);
+		CALL_VIRTUAL(void, WIN_LINUX(93,92), this, iTeam);
 	}
 };
