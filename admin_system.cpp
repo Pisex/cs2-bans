@@ -55,6 +55,11 @@ funchook_t* m_IsHearingClient;
 
 CPlayer *m_vecPlayers[64];
 
+CGameEntitySystem* GameEntitySystem()
+{
+	return g_pUtils->GetCGameEntitySystem();
+};
+
 void AdminMenu(int iSlot);
 void ReasonMenu(int iSlot);
 void ShowPlayerList(int iSlot);
@@ -264,7 +269,7 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 		{
 			if(results->FetchRow())
 			{
-				engine->DisconnectClient(CPlayerSlot(PlayerSlot), 41);
+				engine->DisconnectClient(CPlayerSlot(PlayerSlot), NETWORK_DISCONNECT_KICKBANADDED);
 			}
 		}
 	});
@@ -351,7 +356,7 @@ void TimeMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlo
 			else ClientPrintAll(g_AdminSystem.Translate("Ban"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), iTime/60);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pController->m_steamID(), pController2->m_steamID(), iSlot == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), g_pConnection->Escape(pController2->m_iszPlayerName()).c_str(), std::time(0), iTime, std::time(0)+iTime, sReason);
 			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
-			engine->DisconnectClient(CPlayerSlot(g_iTarget[iSlot]), 41);
+			engine->DisconnectClient(CPlayerSlot(g_iTarget[iSlot]), NETWORK_DISCONNECT_KICKBANADDED);
 		}
 		else if(!strcmp(g_szItem[iSlot], "mute"))
 		{
@@ -533,7 +538,7 @@ void PlayersMenuHandle(const char* szBack, const char* szFront, int iItem, int i
 		else if(!strcmp(g_szItem[iSlot], "kick"))
 		{
 			ClientPrintAll(g_AdminSystem.Translate("Kick"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
-			engine->DisconnectClient(CPlayerSlot(g_iTarget[iSlot]), 39);
+			engine->DisconnectClient(CPlayerSlot(g_iTarget[iSlot]), NETWORK_DISCONNECT_KICKED);
 			g_pMenus->ClosePlayerMenu(iSlot);
 		}
 		else if(!strcmp(g_szItem[iSlot], "slay"))
@@ -706,41 +711,8 @@ void StartupServer()
 	g_pNetworkGameServer = g_pNetworkServerService->GetIGameServer();
 	gpGlobals = g_pNetworkGameServer->GetGlobals();
 	g_bHasTicked = false;
-	g_pGameEntitySystem = g_pUtils->GetCGameEntitySystem();
+	g_pGameEntitySystem = GameEntitySystem();
 	g_pEntitySystem = g_pUtils->GetCEntitySystem();
-
-	static bool bDone = false;
-	if (!bDone)
-	{
-		g_pUtils->AddChatListenerPre(g_PLID, ChatListener);
-		g_pUtils->RegCommand(g_PLID, {}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
-			CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
-			char szCommand[256];
-			g_SMAPI->Format(szCommand, sizeof(szCommand), szContent);
-			szCommand[V_strlen(szCommand) - 1] = 0;
-			g_AdminSystem.ParseChatCommand(iSlot, szCommand+1, pPlayerController);
-			return false;
-		});
-
-		g_pAdminCore->RegAdminCategory("PlayerCommands", g_vecPhrases[std::string("PlayerCommands")].c_str());
-		g_pAdminCore->RegAdminCategory("ServerCommands", g_vecPhrases[std::string("ServerCommands")].c_str());
-		// g_pAdminCore->RegAdminCategory("VotingCommands", g_vecPhrases[std::string("VotingCommands")].c_str());
-
-		
-		g_pAdminCore->RegAdminItem("PlayerCommands", "ban", g_vecPhrases[std::string("BanPlayer")].c_str(), 		ADMFLAG_BAN, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "mute", g_vecPhrases[std::string("MutePlayer")].c_str(), 		ADMFLAG_CHAT, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "gag", g_vecPhrases[std::string("GagPlayer")].c_str(), 		ADMFLAG_CHAT, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "silence", g_vecPhrases[std::string("SilencePlayer")].c_str(), ADMFLAG_CHAT, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "kick", g_vecPhrases[std::string("KickPlayer")].c_str(), 		ADMFLAG_KICK, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "slay", g_vecPhrases[std::string("SlayPlayer")].c_str(), 		ADMFLAG_SLAY, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "slap", g_vecPhrases[std::string("SlapPlayer")].c_str(), 		ADMFLAG_SLAY, 		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "who", g_vecPhrases[std::string("WhoPlayer")].c_str(), 		ADMFLAG_GENERIC,	OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "team", g_vecPhrases[std::string("ChangeTeamPlayer")].c_str(), ADMFLAG_SLAY,		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("PlayerCommands", "noclip", g_vecPhrases[std::string("NoclipPlayer")].c_str(),	ADMFLAG_CHEATS,		OnPlayerCommands);
-		g_pAdminCore->RegAdminItem("ServerCommands", "map", g_vecPhrases[std::string("ChangeMap")].c_str(),			ADMFLAG_CHANGEMAP,	OnServerCommands);
-
-		bDone = true;
-	}
 }
 
 void AdminSystem::AllPluginsLoaded()
@@ -854,6 +826,34 @@ void AdminSystem::AllPluginsLoaded()
 	}
 
 	g_pUtils->StartupServer(g_PLID, StartupServer);
+	g_pUtils->AddChatListenerPre(g_PLID, ChatListener);
+	g_pUtils->RegCommand(g_PLID, {}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
+		CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
+		char szCommand[256];
+		g_SMAPI->Format(szCommand, sizeof(szCommand), szContent);
+		szCommand[V_strlen(szCommand) - 1] = 0;
+		Msg("DEBUG: '%s', '%s'\n", szCommand, szContent);
+		g_AdminSystem.ParseChatCommand(iSlot, szContent+1, pPlayerController);
+		return false;
+	});
+
+	g_pAdminCore->RegAdminCategory("PlayerCommands", g_vecPhrases[std::string("PlayerCommands")].c_str());
+	g_pAdminCore->RegAdminCategory("ServerCommands", g_vecPhrases[std::string("ServerCommands")].c_str());
+	// g_pAdminCore->RegAdminCategory("VotingCommands", g_vecPhrases[std::string("VotingCommands")].c_str());
+
+	
+	g_pAdminCore->RegAdminItem("PlayerCommands", "ban", g_vecPhrases[std::string("BanPlayer")].c_str(), 		ADMFLAG_BAN, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "mute", g_vecPhrases[std::string("MutePlayer")].c_str(), 		ADMFLAG_CHAT, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "gag", g_vecPhrases[std::string("GagPlayer")].c_str(), 		ADMFLAG_CHAT, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "silence", g_vecPhrases[std::string("SilencePlayer")].c_str(), ADMFLAG_CHAT, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "kick", g_vecPhrases[std::string("KickPlayer")].c_str(), 		ADMFLAG_KICK, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "slay", g_vecPhrases[std::string("SlayPlayer")].c_str(), 		ADMFLAG_SLAY, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "slap", g_vecPhrases[std::string("SlapPlayer")].c_str(), 		ADMFLAG_SLAY, 		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "who", g_vecPhrases[std::string("WhoPlayer")].c_str(), 		ADMFLAG_GENERIC,	OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "team", g_vecPhrases[std::string("ChangeTeamPlayer")].c_str(), ADMFLAG_SLAY,		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("PlayerCommands", "noclip", g_vecPhrases[std::string("NoclipPlayer")].c_str(),	ADMFLAG_CHEATS,		OnPlayerCommands);
+	g_pAdminCore->RegAdminItem("ServerCommands", "map", g_vecPhrases[std::string("ChangeMap")].c_str(),			ADMFLAG_CHANGEMAP,	OnServerCommands);
+
 	KeyValues* pKVConfig = new KeyValues("Databases");
 	
 	if (!pKVConfig->LoadFromFile(g_pFullFileSystem, "addons/configs/databases.cfg"))
@@ -938,7 +938,7 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 		engine->ServerCommand(sBuffer.c_str());
 		return false;
 	}
-	UTIL_IsHearingClient = libengine.FindPatternSIMD(WIN_LINUX("40 53 48 83 EC 20 48 8B D9 3B 91 B8", "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 3B B7 C8")).RCast< decltype(UTIL_IsHearingClient) >();
+	UTIL_IsHearingClient = libengine.FindPatternSIMD(WIN_LINUX("40 53 48 83 EC 20 48 8B D9 3B 91 C0 00 00 00", "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 3B B7 D0 00 00 00")).RCast< decltype(UTIL_IsHearingClient) >();
 	if (!UTIL_IsHearingClient)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_IsHearingClient", maxlen);
@@ -1152,7 +1152,7 @@ void PunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *play
 			else ClientPrintAll(g_AdminSystem.Translate("Ban"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), iDuration);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pPlayer->GetSteamID(), pTargetPlayer->GetSteamID(), iSlot == -1?"Console":g_pConnection->Escape(player->m_iszPlayerName()).c_str(), g_pConnection->Escape(pTarget->m_iszPlayerName()).c_str(), std::time(0), iDuration*60, std::time(0)+iDuration*60, sReason.c_str());
 			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
-			engine->DisconnectClient(CPlayerSlot(iTarget), 41);
+			engine->DisconnectClient(CPlayerSlot(iTarget), NETWORK_DISCONNECT_KICKBANADDED);
 			break;
 		}
 		case 1:
@@ -1434,7 +1434,7 @@ CON_COMMAND_CHAT_FLAGS(kick, "kick a player", ADMFLAG_KICK)
 		return;
 
 	ClientPrintAll(g_AdminSystem.Translate("Kick"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
-	engine->DisconnectClient(CPlayerSlot(iTarget), 39);
+	engine->DisconnectClient(CPlayerSlot(iTarget), NETWORK_DISCONNECT_KICKED);
 }
 
 CON_COMMAND_CHAT_FLAGS(who, "recognize a player", ADMFLAG_GENERIC)
@@ -1832,7 +1832,7 @@ CON_COMMAND_CHAT_FLAGS(map, "change map", ADMFLAG_CHANGEMAP)
 	if (!engine->IsMapValid(szMapName))
 	{
 		char sCommand[128];
-		g_SMAPI->Format(sCommand, sizeof(sCommand), "ds_workshop_changelevel %s", args[1]);
+		g_SMAPI->Format(sCommand, sizeof(sCommand), "host_workshop_map %s", args[1]);
 		char szBuffer[256];
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map workshop"), args[1]);
 		ClientPrint(iSlot,  "%s", szBuffer);
@@ -1983,7 +1983,7 @@ void AdminApi::BanPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
 	else ClientPrintAll(g_AdminSystem.Translate("Ban"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
 	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
-	engine->DisconnectClient(CPlayerSlot(iSlot), 41);
+	engine->DisconnectClient(CPlayerSlot(iSlot), NETWORK_DISCONNECT_KICKBANADDED);
 }
 
 void AdminApi::MutePlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
@@ -2031,7 +2031,7 @@ const char* AdminSystem::GetLicense()
 
 const char* AdminSystem::GetVersion()
 {
-	return "2.5.3";
+	return "2.5.4";
 }
 
 const char* AdminSystem::GetDate()
