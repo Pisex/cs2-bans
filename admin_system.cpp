@@ -831,7 +831,6 @@ void AdminSystem::AllPluginsLoaded()
 		char szCommand[256];
 		g_SMAPI->Format(szCommand, sizeof(szCommand), szContent);
 		szCommand[V_strlen(szCommand) - 1] = 0;
-		Msg("DEBUG: '%s', '%s'\n", szCommand, szContent);
 		g_AdminSystem.ParseChatCommand(iSlot, szContent+1, pPlayerController);
 		return false;
 	});
@@ -936,7 +935,7 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 		engine->ServerCommand(sBuffer.c_str());
 		return false;
 	}
-	UTIL_IsHearingClient = libengine.FindPatternSIMD(WIN_LINUX("40 53 48 83 EC 20 48 8B D9 3B 91 C0 00 00 00", "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 3B B7 D0 00 00 00")).RCast< decltype(UTIL_IsHearingClient) >();
+	UTIL_IsHearingClient = libengine.FindPatternSIMD(WIN_LINUX("40 53 48 83 EC 20 48 8B D9 3B 91 C0 00 00 00", "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 3B B7")).RCast< decltype(UTIL_IsHearingClient) >();
 	if (!UTIL_IsHearingClient)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_IsHearingClient", maxlen);
