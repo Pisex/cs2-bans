@@ -833,7 +833,7 @@ void AdminSystem::AllPluginsLoaded()
 
 	g_pUtils->StartupServer(g_PLID, StartupServer);
 	g_pUtils->AddChatListenerPre(g_PLID, ChatListener);
-	g_pUtils->RegCommand(g_PLID, {}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
+	g_pUtils->RegCommand(g_PLID, {}, {"!admin","!offban", "!rename","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
 		CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
 		g_AdminSystem.ParseChatCommand(iSlot, szContent+1, pPlayerController);
 		return false;
