@@ -2072,7 +2072,7 @@ const char* AdminSystem::GetLicense()
 
 const char* AdminSystem::GetVersion()
 {
-	return "2.5.4";
+	return "2.5.5";
 }
 
 const char* AdminSystem::GetDate()
