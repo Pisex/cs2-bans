@@ -5,7 +5,6 @@
 AdminSystem g_AdminSystem;
 PLUGIN_EXPOSE(AdminSystem, g_AdminSystem);
 
-INetworkGameServer *g_pNetworkGameServer = nullptr;
 CGameEntitySystem* g_pGameEntitySystem = nullptr;
 CSchemaSystem* g_pCSchemaSystem = nullptr;
 CEntitySystem* g_pEntitySystem = nullptr;
@@ -101,6 +100,7 @@ void ClientPrintAll(const char *msg, ...)
 	g_pUtils->PrintToChatAll(buf2);
 	ConMsg("%s\n", buf2);
 }
+
 void ClientPrint(int iSlot, const char *msg, ...)
 {
 	va_list args;
@@ -113,7 +113,9 @@ void ClientPrint(int iSlot, const char *msg, ...)
 	va_end(args);
 
 	g_pUtils->PrintToChat(iSlot, buf2, nullptr, nullptr, nullptr, nullptr);
+	if(iSlot < 0) ConMsg("%s\n", buf2);
 }
+
 bool CustomFlagsToString(std::string& flag, uint64_t flags)
 {
     int total = 0;
@@ -135,6 +137,7 @@ bool CustomFlagsToString(std::string& flag, uint64_t flags)
     }
     return total;
 }
+
 void FlagsToString(std::string& flag, uint64_t flags)
 {
     int total = 0;
@@ -261,7 +264,7 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 	char szQuery[128];
 	uint64 iSteamID = m_vecPlayers[PlayerSlot]->GetSteamID();
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_bans` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
-	g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
+	g_pConnection->Query(szQuery, [PlayerSlot, this, iSteamID, bAdmin](IMySQLQuery* test)
 	{
 		auto results = test->GetResultSet();
 		if(results->GetRowCount())
@@ -271,57 +274,61 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 				engine->DisconnectClient(CPlayerSlot(PlayerSlot), NETWORK_DISCONNECT_KICKBANADDED);
 			}
 		}
-	});
-	g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_mutes` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
-	g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
-	{
-		auto results = test->GetResultSet();
-		if(results->GetRowCount())
-		{
-			while(results->FetchRow())
-			{
-				int iDuration = results->GetInt(6);
-				int iEnd = results->GetInt(7);
-				m_vecPlayers[PlayerSlot]->SetMuted(iDuration, iEnd);
-			}
-		}
 		else
-			m_vecPlayers[PlayerSlot]->SetMuted(-1, -1);
-	});
-	g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_gags` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
-	g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
-	{
-		auto results = test->GetResultSet();
-		if(results->GetRowCount())
 		{
-			while(results->FetchRow())
+			char szQuery[128];
+			g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_mutes` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
+			g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
 			{
-				int iDuration = results->GetInt(6);
-				int iEnd = results->GetInt(7);
-				m_vecPlayers[PlayerSlot]->SetGagged(iDuration, iEnd);
-			}
-		}
-		else
-			m_vecPlayers[PlayerSlot]->SetGagged(-1, -1);
-	});
-	if(bAdmin)
-	{
-		g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT `immunity`, `end`, `flags`, `name` FROM `as_admins` WHERE `steamid` = '%lld'", iSteamID);
-		g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
-		{
-			auto results = test->GetResultSet();
-			if(results->GetRowCount())
-			{
-				if(results->FetchRow())
+				auto results = test->GetResultSet();
+				if(results->GetRowCount())
 				{
-					m_vecPlayers[PlayerSlot]->SetAdminImmunity(results->GetInt(0));
-					m_vecPlayers[PlayerSlot]->SetAdminEnd(results->GetInt(1));
-					m_vecPlayers[PlayerSlot]->SetAdminFlags(ParseFlags(results->GetString(2)));
-					m_vecPlayers[PlayerSlot]->SetAdminName(results->GetString(3));
+					while(results->FetchRow())
+					{
+						int iDuration = results->GetInt(6);
+						int iEnd = results->GetInt(7);
+						m_vecPlayers[PlayerSlot]->SetMuted(iDuration, iEnd);
+					}
 				}
+				else
+					m_vecPlayers[PlayerSlot]->SetMuted(-1, -1);
+			});
+			g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_gags` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
+			g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
+			{
+				auto results = test->GetResultSet();
+				if(results->GetRowCount())
+				{
+					while(results->FetchRow())
+					{
+						int iDuration = results->GetInt(6);
+						int iEnd = results->GetInt(7);
+						m_vecPlayers[PlayerSlot]->SetGagged(iDuration, iEnd);
+					}
+				}
+				else
+					m_vecPlayers[PlayerSlot]->SetGagged(-1, -1);
+			});
+			if(bAdmin)
+			{
+				g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT `immunity`, `end`, `flags`, `name` FROM `as_admins` WHERE `steamid` = '%lld'", iSteamID);
+				g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
+				{
+					auto results = test->GetResultSet();
+					if(results->GetRowCount())
+					{
+						if(results->FetchRow())
+						{
+							m_vecPlayers[PlayerSlot]->SetAdminImmunity(results->GetInt(0));
+							m_vecPlayers[PlayerSlot]->SetAdminEnd(results->GetInt(1));
+							m_vecPlayers[PlayerSlot]->SetAdminFlags(ParseFlags(results->GetString(2)));
+							m_vecPlayers[PlayerSlot]->SetAdminName(results->GetString(3));
+						}
+					}
+				});
 			}
-		});
-	}
+		}
+	});
 }
 
 bool ChatListener(int iSlot, const char* szContent)
@@ -643,6 +650,7 @@ void MapMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlot
 {
 	if(iItem < 7)
 	{
+		g_pMenus->ClosePlayerMenu(iSlot);
 		if (!engine->IsMapValid(szBack))
 		{
 			char sCommand[128];
@@ -707,8 +715,7 @@ void OnServerCommands(const char* szName, int iSlot)
 
 void StartupServer()
 {
-	g_pNetworkGameServer = g_pNetworkServerService->GetIGameServer();
-	gpGlobals = g_pNetworkGameServer->GetGlobals();
+	gpGlobals = g_pUtils->GetCGlobalVars();
 	g_bHasTicked = false;
 	g_pGameEntitySystem = GameEntitySystem();
 	g_pEntitySystem = g_pUtils->GetCEntitySystem();
@@ -828,9 +835,6 @@ void AdminSystem::AllPluginsLoaded()
 	g_pUtils->AddChatListenerPre(g_PLID, ChatListener);
 	g_pUtils->RegCommand(g_PLID, {}, {"!admin","!ban","!unban","!mute","!unmute","!gag","!ungag","!silence","!unsilence","!status","!kick","!who","!csay","!hsay","!rcon","!freeze","!unfreeze","!noclip","!setteam","!changeteam","!slap","!slay","!map","!reload_admins","!add_admin","!remove_admin"}, [](int iSlot, const char* szContent){
 		CCSPlayerController* pPlayerController = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iSlot + 1));
-		char szCommand[256];
-		g_SMAPI->Format(szCommand, sizeof(szCommand), szContent);
-		szCommand[V_strlen(szCommand) - 1] = 0;
 		g_AdminSystem.ParseChatCommand(iSlot, szContent+1, pPlayerController);
 		return false;
 	});
@@ -1341,6 +1345,47 @@ CON_COMMAND_CHAT(admin, "shows available admin commands")
 		ClientPrint(iSlot, "%s", g_AdminSystem.Translate("DenyAccess"));
 }
 
+CON_COMMAND_CHAT_FLAGS(offban, "offban", ADMFLAG_BAN)
+{
+	if (args.ArgC() < 4)
+	{
+		ClientPrint(iSlot, "%s!offban <steam64> <nick> <duration(minutes)/0 (permanent)> <reason>", g_AdminSystem.Translate("Usage"));
+		return;
+	}
+	g_pAdminCore->OfflineBanPlayer(std::stoull(args[1]), args[2], iSlot, std::stoull(args[3]), args[4]);
+	if(iSlot >= 0)
+		ClientPrint(iSlot, "%s", g_AdminSystem.Translate("OfflineBan"));
+}
+
+CON_COMMAND_CHAT_FLAGS(rename, "rename", ADMFLAG_KICK)
+{
+	if (args.ArgC() < 3)
+	{
+		ClientPrint(iSlot,  "%s!rename <#userid|name> <name>", g_AdminSystem.Translate("Usage"));
+		return;
+	}
+
+	int iTarget = g_AdminSystem.TargetPlayerString(args[1]);
+
+	if (iTarget == -1 || !m_vecPlayers[iTarget] || !m_vecPlayers[iSlot])
+	{
+		ClientPrint(iSlot, "%s", g_AdminSystem.Translate("Target not found"));
+		return;
+	}
+
+	if(!g_AdminSystem.CheckImmunity(iTarget, iSlot))
+		return;
+
+	CCSPlayerController* pTarget = (CCSPlayerController *)g_pEntitySystem->GetBaseEntity((CEntityIndex)(iTarget + 1));
+
+	if (!pTarget)
+		return;
+
+	ClientPrintAll(g_AdminSystem.Translate("RenameChat"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), args[2]);
+	g_SMAPI->Format(pTarget->m_iszPlayerName(), 128, args[2]);
+	g_pUtils->SetStateChanged(pTarget, "CBasePlayerController", "m_iszPlayerName");
+}
+
 CON_COMMAND_CHAT_FLAGS(ban, "ban a player", ADMFLAG_BAN)
 {
 	PunishmentPlayer(iSlot, args, player, 0);
@@ -1835,7 +1880,6 @@ CON_COMMAND_CHAT_FLAGS(map, "change map", ADMFLAG_CHANGEMAP)
 		ClientPrint(iSlot,  "%s", szBuffer);
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map"), args[1]);
 		ClientPrintAll( "%s", szBuffer);
-
 		new CTimer(5.0, [sCommand]()
 		{		
 			engine->ServerCommand(sCommand);
@@ -1896,19 +1940,19 @@ CON_COMMAND_CHAT_FLAGS(add_admin, "add admin", ADMFLAG_ROOT)
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_admins` WHERE `steamid` = '%s';", args[2]);
 	g_SMAPI->Format(szQuery2, sizeof(szQuery2), "UPDATE `as_admins` SET `name` = '%s', `flags` = '%s', `immunity` = '%i', `end` = '%lld', `comment` = '%s' WHERE steamid = '%s';", g_pConnection->Escape(args[1]).c_str(), args[4], iImmunity, iDuration == 0?0:std::time(0)+iDuration*60, sComment.c_str(), args[2]);
 	g_SMAPI->Format(szQuery3, sizeof(szQuery3), "INSERT INTO `as_admins` (`steamid`, `name`, `flags`, `immunity`, `end`, `comment`) VALUES ('%s', '%s', '%s', '%i', '%lld', '%s');", args[2], g_pConnection->Escape(args[1]).c_str(), args[4], iImmunity, iDuration == 0?0:std::time(0)+iDuration*60, sComment.c_str());
-	g_pConnection->Query(szQuery, [args, szQuery2, szQuery3, iSlot](IMySQLQuery* test)
+	g_pConnection->Query(szQuery, [arg = args[1], szQuery2, szQuery3, iSlot](IMySQLQuery* test)
 	{
 		auto results = test->GetResultSet();
 		if(results->GetRowCount())
 		{
-			char szBuffer[256];
-			g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("AddAdmin"), args[2]);
-			ClientPrint(iSlot,  "%s", szBuffer);
+			ClientPrint(iSlot,  "%s", g_AdminSystem.Translate("UpdateAdmin"));
 			g_pConnection->Query(szQuery2, [](IMySQLQuery* test){});
 		}
 		else
 		{
-			ClientPrint(iSlot,  "%s", g_AdminSystem.Translate("UpdateAdmin"));
+			char szBuffer[256];
+			g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("AddAdmin"), arg);
+			ClientPrint(iSlot,  "%s", szBuffer);
 			g_pConnection->Query(szQuery3, [](IMySQLQuery* test){});
 		}
 	});

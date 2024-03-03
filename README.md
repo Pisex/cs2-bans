@@ -16,6 +16,8 @@ The plugin includes the following commands:
 - `!status` - Shows player userid.
 - `!admin` - Display admin menu.
 - `!ban <#userid|name> <duration(minutes)/0 (permanent)> <reason>` - Allows you to block a player(ADMFLAG_BAN)
+- `!offban <steam64> <nick> <duration(minutes)/0 (permanent)> <reason>` - Offline ban(ADMFLAG_BAN)
+- `!!rename <#userid|name> <name>` - Rename player(ADMFLAG_KICK)
 - `!unban <steamid> - unban` - Allows you to unblock a player(ADMFLAG_UNBAN)
 - `!silence <#userid|name> <duration(minutes)/0 (permanent)> <reason>` - Allows you to block voice and chat of a player (ADMFLAG_CHAT)
 - `!unsilence <#userid|name>` - Allows you to unlock the voice and chat of the player (ADMFLAG_CHAT)
