@@ -1,41 +1,35 @@
+
+#include "schemasystem/schemasystem.h"
+#include "schemasystem/schematypes.h"
 #include "schemasystem.h"
 #include "utils.hpp"
 #include <cstring>
 
-void CSchemaSystemTypeScope::FindDeclaredClass(SchemaClassInfoData_t*& pClassInfo, const char* pszClassName)
-{
-#if defined _WIN32 && _M_X64
-    CallVFunc<void, 2, SchemaClassInfoData_t*&, const char*>(this, pClassInfo, pszClassName);
+#ifdef _WIN32
+#define MODULE_PREFIX ""
+#define MODULE_EXT ".dll"
 #else
-    pClassInfo = CallVFunc<SchemaClassInfoData_t*, 2, const char*>(this, pszClassName);
+#define MODULE_PREFIX "lib"
+#define MODULE_EXT ".so"
 #endif
+
+namespace schema
+{
+    int32_t GetServerOffset(const char* pszClassName, const char* pszPropName);
 }
 
-CSchemaSystemTypeScope* CSchemaSystem::FindTypeScopeForModule(const char* szpModuleName)
+int32_t schema::GetServerOffset(const char* pszClassName, const char* pszPropName)
 {
-    return CallVFunc<CSchemaSystemTypeScope*, 13, const char*, void*>(this, szpModuleName, nullptr);
-}
-
-CSchemaSystemTypeScope* CSchemaSystem::GetServerTypeScope()
-{
-    static CSchemaSystemTypeScope* pServerTypeScope = FindTypeScopeForModule(WIN_LINUX("server.dll", "libserver.so"));
-
-    return pServerTypeScope;
-}
-
-int32_t CSchemaSystem::GetServerOffset(const char* pszClassName, const char* pszPropName)
-{
-    SchemaClassInfoData_t* pClassInfo = nullptr;
-    GetServerTypeScope()->FindDeclaredClass(pClassInfo, pszClassName);
+    SchemaClassInfoData_t* pClassInfo = g_pSchemaSystem->FindTypeScopeForModule(MODULE_PREFIX "server" MODULE_EXT)->FindDeclaredClass(pszClassName).Get();
     if (pClassInfo)
     {
-        for (int i = 0; i < pClassInfo->m_iFieldsCount; i++)
+        for (int i = 0; i < pClassInfo->m_nFieldCount; i++)
         {
-            auto& pFieldData = pClassInfo->m_pFieldsData[i];
+            auto& pFieldData = pClassInfo->m_pFields[i];
 
             if (std::strcmp(pFieldData.m_pszName, pszPropName) == 0)
             {
-                return pFieldData.m_iOffset;
+                return pFieldData.m_nSingleInheritanceOffset;
             }
         }
     }

@@ -41,6 +41,9 @@ for sdk_target in MMSPlugin.sdk_targets:
       os.path.join('sdk', 'memaddr.cpp')
     ]
 
+    if binary.compiler.target.platform == 'linux':
+      binary.compiler.linkflags += ['-Wl,--version-script=' + os.path.join(builder.currentSourcePath, 'ExportMap')]
+
     if cxx.target.arch == 'x86':
       binary.sources += ['sourcehook/sourcehook_hookmangen.cpp']
     nodes = builder.Add(binary)

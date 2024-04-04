@@ -2,11 +2,12 @@
 #include "admin_system.h"
 #include "metamod_oslink.h"
 
+#include "schemasystem/schemasystem.h"
+
 AdminSystem g_AdminSystem;
 PLUGIN_EXPOSE(AdminSystem, g_AdminSystem);
 
 CGameEntitySystem* g_pGameEntitySystem = nullptr;
-CSchemaSystem* g_pCSchemaSystem = nullptr;
 CEntitySystem* g_pEntitySystem = nullptr;
 IVEngineServer2* engine = nullptr;
 CGlobalVars *gpGlobals = nullptr;
@@ -672,14 +673,13 @@ void MapMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlot
 		}
 		else
 		{
-			char szBuffer[256], sCommand[128];
-			g_SMAPI->Format(sCommand, sizeof(sCommand), "changelevel %s", szMap);
+			char szBuffer[256];
 			g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map"), szFront);
 			ClientPrintAll( "%s", szBuffer);
 			
-			new CTimer(5.0, [sCommand]()
+			new CTimer(5.0, [szMap]()
 			{		
-				engine->ServerCommand(sCommand);
+				engine->ChangeLevel(szMap, nullptr);
 				return -1.0f;
 			});
 		}
@@ -774,8 +774,6 @@ void AdminSystem::AllPluginsLoaded()
 
 		for (KeyValues *pKey = kvPhrases->GetFirstTrueSubKey(); pKey; pKey = pKey->GetNextTrueSubKey())
 			g_vecPhrases[std::string(pKey->GetName())] = std::string(pKey->GetString(g_pszLanguage));
-		
-		delete kvPhrases;
 	}
 
 	{
@@ -792,8 +790,6 @@ void AdminSystem::AllPluginsLoaded()
 		{
 			g_vecMaps[std::string(pValue->GetName())] = std::string(pValue->GetString(nullptr, nullptr));
 		}
-
-		delete kvMaps;
 	}
 
 	
@@ -831,9 +827,6 @@ void AdminSystem::AllPluginsLoaded()
 				g_Times[std::stoi(pValue->GetName())] = std::string(pValue->GetString(nullptr, nullptr));
 			}
 		}
-
-		delete pKVRule;
-		delete g_kvSettings;
 	}
 
 	g_pUtils->StartupServer(g_PLID, StartupServer);
@@ -862,7 +855,6 @@ void AdminSystem::AllPluginsLoaded()
 	g_pAdminCore->RegAdminItem("ServerCommands", "map", g_vecPhrases[std::string("ChangeMap")].c_str(),			ADMFLAG_CHANGEMAP,	OnServerCommands);
 
 	KeyValues* pKVConfig = new KeyValues("Databases");
-	
 	if (!pKVConfig->LoadFromFile(g_pFullFileSystem, "addons/configs/databases.cfg"))
 	{
 		V_strncpy(error, "Failed to load admin_system config 'addons/config/databases.cfg'", 64);
@@ -918,13 +910,13 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 	PLUGIN_SAVEVARS();
 
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pCVar, ICvar, CVAR_INTERFACE_VERSION);
-	GET_V_IFACE_ANY(GetEngineFactory, g_pCSchemaSystem, CSchemaSystem, SCHEMASYSTEM_INTERFACE_VERSION);
+	GET_V_IFACE_CURRENT(GetEngineFactory, g_pSchemaSystem, ISchemaSystem, SCHEMASYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetFileSystemFactory, g_pFullFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, engine, IVEngineServer2, SOURCE2ENGINETOSERVER_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2Server, ISource2Server, SOURCE2SERVER_INTERFACE_VERSION);
-	GET_V_IFACE_ANY(GetServerFactory, g_pSource2GameClients, IServerGameClients, SOURCE2GAMECLIENTS_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
-	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameResourceServiceServer, IGameResourceServiceServer, GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
+	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameResourceServiceServer, IGameResourceService, GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetServerFactory, g_pSource2GameClients, IServerGameClients, SOURCE2GAMECLIENTS_INTERFACE_VERSION);
 
 	g_SMAPI->AddListener( this, this );
 
@@ -999,10 +991,6 @@ void AdminSystem::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTic
     if (simulating && g_bHasTicked)
 	{
 		g_flUniversalTime += gpGlobals->curtime - g_flLastTickedTime;
-	}
-	else
-	{
-		g_flUniversalTime += gpGlobals->interval_per_tick;
 	}
 
 	g_flLastTickedTime = gpGlobals->curtime;
@@ -1659,15 +1647,15 @@ CON_COMMAND_CHAT_FLAGS(noclip, "noclip a player", ADMFLAG_CHEATS)
 			return;
 		}
 
-		if(pPlayer->m_MoveType() == MOVETYPE_NOCLIP)
+		if(pPlayer->m_nActualMoveType() == MOVETYPE_NOCLIP)
 		{
 			ClientPrintAll(g_AdminSystem.Translate("ANoclipDisable"), iSlot == -1?"Console":player->m_iszPlayerName());
-			pPlayer->m_MoveType() = MOVETYPE_WALK;
+			pPlayer->SetMoveType(MOVETYPE_WALK);
 		}
 		else
 		{
 			ClientPrintAll(g_AdminSystem.Translate("ANoclipEnable"), iSlot == -1?"Console":player->m_iszPlayerName());
-			pPlayer->m_MoveType() = MOVETYPE_NOCLIP;
+			pPlayer->SetMoveType(MOVETYPE_NOCLIP);
 		}
 	}
 	else
@@ -1699,14 +1687,14 @@ CON_COMMAND_CHAT_FLAGS(noclip, "noclip a player", ADMFLAG_CHEATS)
 			return;
 		}
 
-		if(pPlayer->m_MoveType() == MOVETYPE_NOCLIP)
+		if(pPlayer->m_nActualMoveType() == MOVETYPE_NOCLIP)
 		{
-			pPlayer->m_MoveType() = MOVETYPE_WALK;
+			pPlayer->SetMoveType(MOVETYPE_WALK);
 			ClientPrintAll(g_AdminSystem.Translate("NoclipDisable"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 		}
 		else
 		{
-			pPlayer->m_MoveType() = MOVETYPE_NOCLIP;
+			pPlayer->SetMoveType(MOVETYPE_NOCLIP);
 			ClientPrintAll(g_AdminSystem.Translate("NoclipEnable"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 		}
 	}
@@ -1872,7 +1860,7 @@ CON_COMMAND_CHAT_FLAGS(map, "change map", ADMFLAG_CHANGEMAP)
 	if (!engine->IsMapValid(szMapName))
 	{
 		char sCommand[128];
-		g_SMAPI->Format(sCommand, sizeof(sCommand), "host_workshop_map %s", args[1]);
+		g_SMAPI->Format(sCommand, sizeof(sCommand), "ds_workshop_changelevel %s", args[1]);
 		char szBuffer[256];
 		g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("Changing map workshop"), args[1]);
 		ClientPrint(iSlot,  "%s", szBuffer);
@@ -1891,10 +1879,8 @@ CON_COMMAND_CHAT_FLAGS(map, "change map", ADMFLAG_CHANGEMAP)
 	ClientPrintAll( "%s", szBuffer);
 	
 	new CTimer(5.0, [szMapName]()
-	{		
-		char sCommand[128];
-		g_SMAPI->Format(sCommand, sizeof(sCommand), "changelevel %s", szMapName);
-		engine->ServerCommand(sCommand);
+	{
+		engine->ChangeLevel(szMapName, nullptr);
 		return -1.0f;
 	});
 }

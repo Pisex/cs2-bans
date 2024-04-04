@@ -25,6 +25,13 @@ public:
 	SCHEMA_FIELD(int32_t, CBaseEntity, m_iHealth);
 	SCHEMA_FIELD(Vector, CBaseEntity, m_vecAbsVelocity);
 	SCHEMA_FIELD(MoveType_t, CBaseEntity, m_MoveType);
+	SCHEMA_FIELD(MoveType_t, CBaseEntity, m_nActualMoveType);
+
+	void SetMoveType(MoveType_t nMoveType)
+	{
+		m_MoveType() = nMoveType;
+		m_nActualMoveType() = nMoveType;
+	}
 
 	void SetAbsVelocity(Vector vecVelocity) { m_vecAbsVelocity() = vecVelocity; }
 
