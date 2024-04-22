@@ -265,7 +265,7 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 	char szQuery[128];
 	uint64 iSteamID = m_vecPlayers[PlayerSlot]->GetSteamID();
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_bans` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
-	g_pConnection->Query(szQuery, [PlayerSlot, this, iSteamID, bAdmin](IMySQLQuery* test)
+	g_pConnection->Query(szQuery, [PlayerSlot, this, iSteamID, bAdmin](ISQLQuery* test)
 	{
 		auto results = test->GetResultSet();
 		if(results->GetRowCount())
@@ -279,7 +279,7 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 		{
 			char szQuery[128];
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_mutes` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
-			g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
+			g_pConnection->Query(szQuery, [PlayerSlot, this](ISQLQuery* test)
 			{
 				auto results = test->GetResultSet();
 				if(results->GetRowCount())
@@ -295,7 +295,7 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 					m_vecPlayers[PlayerSlot]->SetMuted(-1, -1);
 			});
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_gags` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", iSteamID, std::time(0));
-			g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
+			g_pConnection->Query(szQuery, [PlayerSlot, this](ISQLQuery* test)
 			{
 				auto results = test->GetResultSet();
 				if(results->GetRowCount())
@@ -313,7 +313,7 @@ void AdminSystem::CheckInfractions(int PlayerSlot, int bAdmin = true)
 			if(bAdmin)
 			{
 				g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT `immunity`, `end`, `flags`, `name` FROM `as_admins` WHERE `steamid` = '%lld'", iSteamID);
-				g_pConnection->Query(szQuery, [PlayerSlot, this](IMySQLQuery* test)
+				g_pConnection->Query(szQuery, [PlayerSlot, this](ISQLQuery* test)
 				{
 					auto results = test->GetResultSet();
 					if(results->GetRowCount())
@@ -362,7 +362,7 @@ void TimeMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlo
 			if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("BanPermanent"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Ban"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), iTime/60);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pController->m_steamID(), pController2->m_steamID(), iSlot == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), g_pConnection->Escape(pController2->m_iszPlayerName()).c_str(), std::time(0), iTime, std::time(0)+iTime, sReason);
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			engine->DisconnectClient(CPlayerSlot(g_iTarget[iSlot]), NETWORK_DISCONNECT_KICKBANADDED);
 		}
 		else if(!strcmp(g_szItem[iSlot], "mute"))
@@ -370,7 +370,7 @@ void TimeMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlo
 			if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("MutePermanent"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Mute"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), iTime/60);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pController->m_steamID(), pController2->m_steamID(), iSlot == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), g_pConnection->Escape(pController2->m_iszPlayerName()).c_str(), std::time(0), iTime, std::time(0)+iTime, sReason);
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			m_vecPlayers[g_iTarget[iSlot]]->SetMuted(iTime, std::time(0)+iTime);
 		}
 		else if(!strcmp(g_szItem[iSlot], "gag"))
@@ -378,7 +378,7 @@ void TimeMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlo
 			if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("GagPermanent"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Gag"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), iTime/60);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pController->m_steamID(), pController2->m_steamID(), iSlot == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), g_pConnection->Escape(pController2->m_iszPlayerName()).c_str(), std::time(0), iTime, std::time(0)+iTime, sReason);
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			m_vecPlayers[g_iTarget[iSlot]]->SetGagged(iTime, std::time(0)+iTime);
 		}
 		else if(!strcmp(g_szItem[iSlot], "silence"))
@@ -386,9 +386,9 @@ void TimeMenuHandle(const char* szBack, const char* szFront, int iItem, int iSlo
 			if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("SilencePermanent"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Silence"), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), iTime/60);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pController->m_steamID(), pController2->m_steamID(), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), std::time(0), iTime, std::time(0)+iTime, sReason);
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:pController->m_steamID(), pController2->m_steamID(), iSlot == -1?"Console":engine->GetClientConVarValue(iSlot, "name"), pController2->m_iszPlayerName(), std::time(0), iTime, std::time(0)+iTime, sReason);
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			m_vecPlayers[g_iTarget[iSlot]]->SetMuted(iTime, std::time(0)+iTime);
 			m_vecPlayers[g_iTarget[iSlot]]->SetGagged(iTime, std::time(0)+iTime);
 		}
@@ -730,7 +730,7 @@ void AdminSystem::AllPluginsLoaded()
 {
 	char error[64];
 	int ret;
-	g_pMysqlClient = (IMySQLClient *)g_SMAPI->MetaFactory(MYSQLMM_INTERFACE, &ret, NULL);
+	g_pMysqlClient = ((ISQLInterface *)g_SMAPI->MetaFactory(SQLMM_INTERFACE, &ret, nullptr))->GetMySQLClient();
 
 	if (ret == META_IFACE_FAILED)
 	{
@@ -880,10 +880,10 @@ void AdminSystem::AllPluginsLoaded()
 		{
 			META_CONPRINT("Failed to connect the mysql database\n");
 		} else {
-			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_admins`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `flags` VARCHAR(64) NOT NULL, `immunity` INTEGER NOT NULL, `end` INTEGER NOT NULL, `comment` VARCHAR(64) NOT NULL);", [this](IMySQLQuery* test){});
-			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_bans`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, `admin_steamid` VARCHAR(32) NOT NULL, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `admin_name` VARCHAR(64) NOT NULL, `created` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `end` INTEGER NOT NULL, `reason` VARCHAR(64) NOT NULL);", [this](IMySQLQuery* test){});
-			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_gags`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, `admin_steamid` VARCHAR(32) NOT NULL, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `admin_name` VARCHAR(64) NOT NULL, `created` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `end` INTEGER NOT NULL, `reason` VARCHAR(64) NOT NULL);", [this](IMySQLQuery* test){});
-			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_mutes`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,`admin_steamid` VARCHAR(32) NOT NULL, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `admin_name` VARCHAR(64) NOT NULL, `created` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `end` INTEGER NOT NULL, `reason` VARCHAR(64) NOT NULL);", [this](IMySQLQuery* test){});
+			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_admins`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `flags` VARCHAR(64) NOT NULL, `immunity` INTEGER NOT NULL, `end` INTEGER NOT NULL, `comment` VARCHAR(64) NOT NULL);", [this](ISQLQuery* test){});
+			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_bans`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, `admin_steamid` VARCHAR(32) NOT NULL, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `admin_name` VARCHAR(64) NOT NULL, `created` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `end` INTEGER NOT NULL, `reason` VARCHAR(64) NOT NULL);", [this](ISQLQuery* test){});
+			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_gags`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, `admin_steamid` VARCHAR(32) NOT NULL, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `admin_name` VARCHAR(64) NOT NULL, `created` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `end` INTEGER NOT NULL, `reason` VARCHAR(64) NOT NULL);", [this](ISQLQuery* test){});
+			g_pConnection->Query("CREATE TABLE IF NOT EXISTS `as_mutes`(`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,`admin_steamid` VARCHAR(32) NOT NULL, `steamid` VARCHAR(32) NOT NULL, `name` VARCHAR(64) NOT NULL, `admin_name` VARCHAR(64) NOT NULL, `created` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `end` INTEGER NOT NULL, `reason` VARCHAR(64) NOT NULL);", [this](ISQLQuery* test){});
 		}
 	});
 }
@@ -1141,7 +1141,7 @@ void PunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *play
 			if(iDuration == 0) ClientPrintAll(g_AdminSystem.Translate("BanPermanent"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Ban"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), iDuration);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:m_vecPlayers[iSlot]->GetSteamID(), pTargetPlayer->GetSteamID(), iSlot == -1?"Console":g_pConnection->Escape(player->m_iszPlayerName()).c_str(), g_pConnection->Escape(pTarget->m_iszPlayerName()).c_str(), std::time(0), iDuration*60, std::time(0)+iDuration*60, sReason.c_str());
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			engine->DisconnectClient(CPlayerSlot(iTarget), NETWORK_DISCONNECT_KICKBANADDED);
 			break;
 		}
@@ -1150,7 +1150,7 @@ void PunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *play
 			if(iDuration == 0) ClientPrintAll(g_AdminSystem.Translate("MutePermanent"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Mute"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), iDuration);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:m_vecPlayers[iSlot]->GetSteamID(), pTargetPlayer->GetSteamID(), iSlot == -1?"Console":g_pConnection->Escape(player->m_iszPlayerName()).c_str(), g_pConnection->Escape(pTarget->m_iszPlayerName()).c_str(), std::time(0), iDuration*60, std::time(0)+iDuration*60, sReason.c_str());
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			pTargetPlayer->SetMuted(iDuration*60, std::time(0)+iDuration*60);
 			break;
 		}
@@ -1159,7 +1159,7 @@ void PunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *play
 			if(iDuration == 0) ClientPrintAll(g_AdminSystem.Translate("GagPermanent"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Gag"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), iDuration);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:m_vecPlayers[iSlot]->GetSteamID(), pTargetPlayer->GetSteamID(), iSlot == -1?"Console":g_pConnection->Escape(player->m_iszPlayerName()).c_str(), g_pConnection->Escape(pTarget->m_iszPlayerName()).c_str(), std::time(0), iDuration*60, std::time(0)+iDuration*60, sReason.c_str());
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			pTargetPlayer->SetGagged(iDuration*60, std::time(0)+iDuration*60);
 			break;
 		}
@@ -1168,9 +1168,9 @@ void PunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *play
 			if(iDuration == 0) ClientPrintAll(g_AdminSystem.Translate("SilencePermanent"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 			else ClientPrintAll(g_AdminSystem.Translate("Silence"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), iDuration);
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:m_vecPlayers[iSlot]->GetSteamID(), pTargetPlayer->GetSteamID(), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), std::time(0), iDuration*60, std::time(0)+iDuration*60, sReason.c_str());
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iSlot == -1?0:m_vecPlayers[iSlot]->GetSteamID(), pTargetPlayer->GetSteamID(), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName(), std::time(0), iDuration*60, std::time(0)+iDuration*60, sReason.c_str());
-			g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 			pTargetPlayer->SetMuted(iDuration*60, std::time(0)+iDuration*60);
 			pTargetPlayer->SetGagged(iDuration*60, std::time(0)+iDuration*60);
 			break;
@@ -1233,7 +1233,7 @@ void UnPunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *pl
 			{
 				ClientPrintAll(g_AdminSystem.Translate("UnMuted"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 				g_SMAPI->Format(szQuery, sizeof(szQuery), "DELETE FROM `as_mutes` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", pTargetPlayer->GetSteamID(), std::time(0));
-				g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+				g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 				pTargetPlayer->SetMuted(-1, -1);
 				break;
 			}
@@ -1241,7 +1241,7 @@ void UnPunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *pl
 			{
 				ClientPrintAll(g_AdminSystem.Translate("UnGagged"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 				g_SMAPI->Format(szQuery, sizeof(szQuery), "DELETE FROM `as_gags` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", pTargetPlayer->GetSteamID(), std::time(0));
-				g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+				g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 				pTargetPlayer->SetGagged(-1, -1);
 				break;
 			}
@@ -1249,9 +1249,9 @@ void UnPunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *pl
 			{
 				ClientPrintAll(g_AdminSystem.Translate("UnSilence"), iSlot == -1?"Console":player->m_iszPlayerName(), pTarget->m_iszPlayerName());
 				g_SMAPI->Format(szQuery, sizeof(szQuery), "DELETE FROM `as_mutes` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", pTargetPlayer->GetSteamID(), std::time(0));
-				g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+				g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 				g_SMAPI->Format(szQuery, sizeof(szQuery), "DELETE FROM `as_gags` WHERE `steamid` = '%lld' AND (`end` > %i OR `duration` = 0)", pTargetPlayer->GetSteamID(), std::time(0));
-				g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+				g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 				pTargetPlayer->SetMuted(-1, -1);
 				pTargetPlayer->SetGagged(-1, -1);
 				break;
@@ -1262,7 +1262,7 @@ void UnPunishmentPlayer(int iSlot, const CCommand &args, CCSPlayerController *pl
 	{
 		//Message
 		g_SMAPI->Format(szQuery, sizeof(szQuery), "DELETE FROM `as_bans` WHERE `steamid` = '%s' AND (`end` > %i OR `duration` = 0)", args[1], std::time(0));
-		g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+		g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 	}
 }
 
@@ -1926,20 +1926,20 @@ CON_COMMAND_CHAT_FLAGS(add_admin, "add admin", ADMFLAG_ROOT)
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "SELECT * FROM `as_admins` WHERE `steamid` = '%s';", args[2]);
 	g_SMAPI->Format(szQuery2, sizeof(szQuery2), "UPDATE `as_admins` SET `name` = '%s', `flags` = '%s', `immunity` = '%i', `end` = '%lld', `comment` = '%s' WHERE steamid = '%s';", g_pConnection->Escape(args[1]).c_str(), args[4], iImmunity, iDuration == 0?0:std::time(0)+iDuration*60, sComment.c_str(), args[2]);
 	g_SMAPI->Format(szQuery3, sizeof(szQuery3), "INSERT INTO `as_admins` (`steamid`, `name`, `flags`, `immunity`, `end`, `comment`) VALUES ('%s', '%s', '%s', '%i', '%lld', '%s');", args[2], g_pConnection->Escape(args[1]).c_str(), args[4], iImmunity, iDuration == 0?0:std::time(0)+iDuration*60, sComment.c_str());
-	g_pConnection->Query(szQuery, [arg = args[1], szQuery2, szQuery3, iSlot](IMySQLQuery* test)
+	g_pConnection->Query(szQuery, [arg = args[1], szQuery2, szQuery3, iSlot](ISQLQuery* test)
 	{
 		auto results = test->GetResultSet();
 		if(results->GetRowCount())
 		{
 			ClientPrint(iSlot,  "%s", g_AdminSystem.Translate("UpdateAdmin"));
-			g_pConnection->Query(szQuery2, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery2, [](ISQLQuery* test){});
 		}
 		else
 		{
 			char szBuffer[256];
 			g_SMAPI->Format(szBuffer, sizeof(szBuffer), g_AdminSystem.Translate("AddAdmin"), arg);
 			ClientPrint(iSlot,  "%s", szBuffer);
-			g_pConnection->Query(szQuery3, [](IMySQLQuery* test){});
+			g_pConnection->Query(szQuery3, [](ISQLQuery* test){});
 		}
 	});
 }
@@ -1957,7 +1957,7 @@ CON_COMMAND_CHAT_FLAGS(remove_admin, "remove admin", ADMFLAG_ROOT)
 	ClientPrint(iSlot,  "%s", szBuffer);
 
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "DELETE FROM `as_admins` WHERE `steamid` = '%s';", args[1]);
-	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 }
 
 CON_COMMAND_CHAT_FLAGS(reload_infractions, "reload infractions", ADMFLAG_ROOT)
@@ -2009,7 +2009,7 @@ void AdminApi::BanPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
 	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("BanPermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
 	else ClientPrintAll(g_AdminSystem.Translate("Ban"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
-	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 	engine->DisconnectClient(CPlayerSlot(iSlot), NETWORK_DISCONNECT_KICKBANADDED);
 }
 
@@ -2019,7 +2019,7 @@ void AdminApi::MutePlayer(int iSlot, int iAdmin, int iTime, const char* szReason
 	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("MutePermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
 	else ClientPrintAll(g_AdminSystem.Translate("Mute"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_mutes` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
-	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 	m_vecPlayers[iSlot]->SetMuted(iTime, std::time(0)+iTime);
 }
 
@@ -2029,7 +2029,7 @@ void AdminApi::GagPlayer(int iSlot, int iAdmin, int iTime, const char* szReason)
 	if(iTime == 0) ClientPrintAll(g_AdminSystem.Translate("GagPermanent"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"));
 	else ClientPrintAll(g_AdminSystem.Translate("Gag"), iAdmin == -1?"Console":engine->GetClientConVarValue(iAdmin, "name"), engine->GetClientConVarValue(iSlot, "name"), iTime/60);
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_gags` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), m_vecPlayers[iSlot]->GetSteamID(), iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(engine->GetClientConVarValue(iSlot, "name")).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
-	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 	m_vecPlayers[iSlot]->SetGagged(iTime*60, std::time(0)+iTime*60);
 }
 
@@ -2047,7 +2047,7 @@ void AdminApi::OfflineBanPlayer(uint64_t SteamID, const char* szNick, int iAdmin
 {
 	char szQuery[512];
 	g_SMAPI->Format(szQuery, sizeof(szQuery), "INSERT INTO `as_bans` (`admin_steamid`, `steamid`, `admin_name`, `name`, `created`, `duration`, `end`, `reason`) VALUES ('%lld', '%lld', '%s', '%s', '%lld', '%i', '%lld', '%s');", iAdmin == -1?0:m_vecPlayers[iAdmin]->GetSteamID(), SteamID, iAdmin == -1?"Console":g_pConnection->Escape(engine->GetClientConVarValue(iAdmin, "name")).c_str(), g_pConnection->Escape(szNick).c_str(), std::time(0), iTime, std::time(0)+iTime, szReason);
-	g_pConnection->Query(szQuery, [](IMySQLQuery* test){});
+	g_pConnection->Query(szQuery, [](ISQLQuery* test){});
 }
 
 ///////////////////////////////////////
