@@ -937,7 +937,7 @@ bool AdminSystem::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, b
 		return false;
 	}
 	// "55 48 89 E5 41 57 41 56 4C 8D BF 08 01 00 00 41 55"
-	UTIL_IsHearingClient = libengine.FindPatternSIMD(WIN_LINUX("40 53 48 83 EC 20 48 8B D9 3B 91 C0 00 00 00", "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 3B B7")).RCast< decltype(UTIL_IsHearingClient) >();
+	UTIL_IsHearingClient = libengine.FindPatternSIMD(WIN_LINUX("40 53 48 83 EC 20 48 8B D9 3B 91 C0 00 00 00", "55 48 89 E5 41 55 41 54 53 48 89 FB 48 83 EC 08 3B 77 58")).RCast< decltype(UTIL_IsHearingClient) >();
 	if (!UTIL_IsHearingClient)
 	{
 		V_strncpy(error, "Failed to find function to get UTIL_IsHearingClient", maxlen);
